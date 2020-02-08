@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>http://localhost:4000</id>
+    <id>https://rustc.io</id>
     <title>Gridea</title>
-    <updated>2020-02-08T18:39:35.426Z</updated>
+    <updated>2020-02-08T18:49:02.136Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="http://localhost:4000"/>
-    <link rel="self" href="http://localhost:4000/atom.xml"/>
+    <link rel="alternate" href="https://rustc.io"/>
+    <link rel="self" href="https://rustc.io/atom.xml"/>
     <subtitle>温故而知新</subtitle>
-    <logo>http://localhost:4000/images/avatar.png</logo>
-    <icon>http://localhost:4000/favicon.ico</icon>
+    <logo>https://rustc.io/images/avatar.png</logo>
+    <icon>https://rustc.io/favicon.ico</icon>
     <rights>All rights reserved 2020, Gridea</rights>
     <entry>
         <title type="html"><![CDATA[深入浅出Rust Future - Part 5]]></title>
-        <id>http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-5</id>
-        <link href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-5">
+        <id>https://rustc.io/post/shen-ru-qian-chu-rust-future-part-5</id>
+        <link href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part-5">
         </link>
         <updated>2020-02-08T18:38:44.000Z</updated>
         <summary type="html"><![CDATA[<p><a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-5---streams-5i8">原文:Rust futures: an uneducated, short and hopefully not boring tutorial - Part 5 - Streams</a></p>
@@ -261,8 +261,8 @@ ret == ()
     </entry>
     <entry>
         <title type="html"><![CDATA[深入浅出Rust Future - Part4 -  A real future from scratch]]></title>
-        <id>http://localhost:4000/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch</id>
-        <link href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch">
+        <id>https://rustc.io/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch</id>
+        <link href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch">
         </link>
         <updated>2020-02-08T18:36:50.000Z</updated>
         <summary type="html"><![CDATA[<p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-4---a-real-future-from-scratch-734">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 4 - A &quot;real&quot; future from scratch</a></p>
@@ -547,8 +547,8 @@ fn main() {
     </entry>
     <entry>
         <title type="html"><![CDATA[深入浅出Rust Future - Part3 - The Reactor]]></title>
-        <id>http://localhost:4000/post/shen-ru-qian-chu-rust-future-part3-the-reactor</id>
-        <link href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part3-the-reactor">
+        <id>https://rustc.io/post/shen-ru-qian-chu-rust-future-part3-the-reactor</id>
+        <link href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part3-the-reactor">
         </link>
         <updated>2020-02-08T18:34:40.000Z</updated>
         <summary type="html"><![CDATA[<p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-3---the-reactor-433">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 3 - The reactor</a></p>
@@ -846,8 +846,8 @@ fn main() {
     </entry>
     <entry>
         <title type="html"><![CDATA[深入浅出Rust Future - Part 2]]></title>
-        <id>http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-2</id>
-        <link href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-2">
+        <id>https://rustc.io/post/shen-ru-qian-chu-rust-future-part-2</id>
+        <link href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part-2">
         </link>
         <updated>2020-02-08T18:32:17.000Z</updated>
         <summary type="html"><![CDATA[<p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-2-8dd">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 2</a></p>
@@ -1064,8 +1064,8 @@ println!(&quot;my_fut_ref_chained == {}&quot;, retval);
     </entry>
     <entry>
         <title type="html"><![CDATA[深入浅出Rust Future - Part 1]]></title>
-        <id>http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-1</id>
-        <link href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-1">
+        <id>https://rustc.io/post/shen-ru-qian-chu-rust-future-part-1</id>
+        <link href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part-1">
         </link>
         <updated>2020-02-08T18:26:25.000Z</updated>
         <content type="html"><![CDATA[<p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-1-3k3">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 1</a></p>
@@ -1237,8 +1237,8 @@ println!(&quot;fut_generic_own == {}&quot;, retval);
     </entry>
     <entry>
         <title type="html"><![CDATA[创建一个简单的k8s应用]]></title>
-        <id>http://localhost:4000/post/chuang-jian-yi-ge-jian-dan-de-k8s-ying-yong</id>
-        <link href="http://localhost:4000/post/chuang-jian-yi-ge-jian-dan-de-k8s-ying-yong">
+        <id>https://rustc.io/post/chuang-jian-yi-ge-jian-dan-de-k8s-ying-yong</id>
+        <link href="https://rustc.io/post/chuang-jian-yi-ge-jian-dan-de-k8s-ying-yong">
         </link>
         <updated>2020-02-08T18:25:51.000Z</updated>
         <summary type="html"><![CDATA[<h1 id="创建k8s应用">创建K8S应用</h1>
@@ -1503,8 +1503,8 @@ spec:
     </entry>
     <entry>
         <title type="html"><![CDATA[kubernetes 容器应用]]></title>
-        <id>http://localhost:4000/post/kubernetes-rong-qi-ying-yong</id>
-        <link href="http://localhost:4000/post/kubernetes-rong-qi-ying-yong">
+        <id>https://rustc.io/post/kubernetes-rong-qi-ying-yong</id>
+        <link href="https://rustc.io/post/kubernetes-rong-qi-ying-yong">
         </link>
         <updated>2020-02-08T18:22:53.000Z</updated>
         <summary type="html"><![CDATA[<h1 id="前言">前言</h1>
@@ -1685,8 +1685,8 @@ cd laravel-k8s-config &amp;&amp; kubectl create -f .
     </entry>
     <entry>
         <title type="html"><![CDATA[K8s内部负载均衡原理]]></title>
-        <id>http://localhost:4000/post/k8s-nei-bu-fu-zai-jun-heng-yuan-li</id>
-        <link href="http://localhost:4000/post/k8s-nei-bu-fu-zai-jun-heng-yuan-li">
+        <id>https://rustc.io/post/k8s-nei-bu-fu-zai-jun-heng-yuan-li</id>
+        <link href="https://rustc.io/post/k8s-nei-bu-fu-zai-jun-heng-yuan-li">
         </link>
         <updated>2020-02-08T18:14:12.000Z</updated>
         <summary type="html"><![CDATA[<h1 id="前言">前言</h1>
@@ -1900,8 +1900,8 @@ pool.Go(func(stop chan bool) {
     </entry>
     <entry>
         <title type="html"><![CDATA[PHP与PHP-FPM不得不说的二三事]]></title>
-        <id>http://localhost:4000/post/php-yu-php-fpm-bu-de-bu-shuo-de-er-san-shi</id>
-        <link href="http://localhost:4000/post/php-yu-php-fpm-bu-de-bu-shuo-de-er-san-shi">
+        <id>https://rustc.io/post/php-yu-php-fpm-bu-de-bu-shuo-de-er-san-shi</id>
+        <link href="https://rustc.io/post/php-yu-php-fpm-bu-de-bu-shuo-de-er-san-shi">
         </link>
         <updated>2020-02-08T18:12:41.000Z</updated>
         <summary type="html"><![CDATA[<h2 id="前言">前言</h2>
@@ -2036,8 +2036,8 @@ Master进程和Woker进程之间不会直接通信，而是通过共享内存Mas
     </entry>
     <entry>
         <title type="html"><![CDATA[ K8S FOR IOT的大胆猜想]]></title>
-        <id>http://localhost:4000/post/k8s-for-iot-de-da-dan-cai-xiang</id>
-        <link href="http://localhost:4000/post/k8s-for-iot-de-da-dan-cai-xiang">
+        <id>https://rustc.io/post/k8s-for-iot-de-da-dan-cai-xiang</id>
+        <link href="https://rustc.io/post/k8s-for-iot-de-da-dan-cai-xiang">
         </link>
         <updated>2020-02-08T18:11:51.000Z</updated>
         <summary type="html"><![CDATA[<h1 id="前言">前言</h1>
