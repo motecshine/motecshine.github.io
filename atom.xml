@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://rustc.io</id>
-    <title>Gridea</title>
-    <updated>2020-02-08T18:49:02.136Z</updated>
+    <title>HelloWorld</title>
+    <updated>2020-02-08T18:56:12.772Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://rustc.io"/>
     <link rel="self" href="https://rustc.io/atom.xml"/>
-    <subtitle>温故而知新</subtitle>
+    <subtitle>尽走歪路</subtitle>
     <logo>https://rustc.io/images/avatar.png</logo>
     <icon>https://rustc.io/favicon.ico</icon>
-    <rights>All rights reserved 2020, Gridea</rights>
+    <rights>All rights reserved 2020, HelloWorld</rights>
     <entry>
         <title type="html"><![CDATA[深入浅出Rust Future - Part 5]]></title>
         <id>https://rustc.io/post/shen-ru-qian-chu-rust-future-part-5</id>

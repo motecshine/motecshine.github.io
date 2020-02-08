@@ -1,96 +1,94 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>深入浅出Rust Future - Part 5 | Gridea</title>
-<link rel="shortcut icon" href="https://rustc.io/favicon.ico?v=1581187740028">
-<link href="https://cdn.remixicon.com/releases/v2.1.0/remixicon.css" rel="stylesheet">
+    <meta charset="utf-8" >
+
+<title>深入浅出Rust Future - Part 5 | HelloWorld</title>
+<meta name="description" content="尽走歪路">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="shortcut icon" href="https://rustc.io/favicon.ico?v=1581188161799">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://unpkg.com/papercss@1.6.1/dist/paper.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://rustc.io/styles/main.css">
-<link rel="alternate" type="application/atom+xml" title="深入浅出Rust Future - Part 5 | Gridea - Atom Feed" href="https://rustc.io/atom.xml">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
 
 
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
 
-    <meta name="description" content="原文:Rust futures: an uneducated, short and hopefully not boring tutorial - Part 5 - Streams
-Intro
-在上篇文章中我们学习了如何实现一个高效率的Fu..." />
-    <meta name="keywords" content="" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
-    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://rustc.io">
-  <img class="avatar" src="https://rustc.io/images/avatar.png?v=1581187740028" alt="">
-  </a>
-  <h1 class="site-title">
-    Gridea
-  </h1>
-  <p class="site-description">
-    温故而知新
-  </p>
-  <div class="menu-container">
-    
-      
-        <a href="/" class="menu">
-          首页
-        </a>
-      
-    
-      
-        <a href="/archives" class="menu">
-          归档
-        </a>
-      
-    
-      
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
+  
+    <nav class="navbar border fixed split-nav">
+  <div class="nav-brand">
+    <h3><a href="https://rustc.io">HelloWorld</a></h3>
   </div>
-  <div class="social-container">
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-  </div>
-</div>
-
-        <div class="post-detail">
-          <article class="post">
-            <h2 class="post-title">
-              深入浅出Rust Future - Part 5
-            </h2>
-            <div class="post-info">
-              <span>
-                2020-02-09
-              </span>
-              <span>
-                8 min read
-              </span>
-              
-            </div>
+  <div class="collapsible">
+    <input id="collapsible1" type="checkbox" name="collapsible1">
+    <button>
+      <label for="collapsible1">
+        <div class="bar1"></div>
+        <div class="bar2"></div>
+        <div class="bar3"></div>
+      </label>
+    </button>
+    <div class="collapsible-body">
+      <ul class="inline">
+        
+          <li>
             
-            <div class="post-content-wrapper">
-              <div class="post-content">
-                <p><a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-5---streams-5i8">原文:Rust futures: an uneducated, short and hopefully not boring tutorial - Part 5 - Streams</a></p>
+              <a href="/" class="menu">
+                首页
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/archives" class="menu">
+                归档
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/tags" class="menu">
+                标签
+              </a>
+            
+          </li>
+        
+          <li>
+            
+              <a href="/post/about" class="menu">
+                关于
+              </a>
+            
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div id="top" class="row site">
+      <div class="sm-12 md-8 col">
+        <div class="paper">
+          <article class="article">
+            <h1>深入浅出Rust Future - Part 5</h1>
+            <p class="article-meta">
+              2020-02-09
+              
+            </p>
+            
+            <div class="post-content">
+              <p><a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-5---streams-5i8">原文:Rust futures: an uneducated, short and hopefully not boring tutorial - Part 5 - Streams</a></p>
 <h1 id="intro">Intro</h1>
 <p>在上篇文章中我们学习了如何实现一个高效率的<code>Future</code>(尽量不阻塞, 只有在需要时才会<code>Unpark</code>我们的<code>Task</code>).  今天继续扩展我们的<code>Future</code>: 实现一个<code>Stream Trait</code>.<br>
 <code>Stream</code>跟<code>Iterators</code>看起来很像: 他们随着时间的推移产生多个相同类型的输出, 与<code>Iterators</code>唯一的区别就是消费的方式不同. 让我们一起尝试使用<code>Reactor</code>来处理<code>Streams</code>吧.</p>
@@ -327,88 +325,144 @@ ret == ()
 <h2 id="next-steps">Next steps</h2>
 <p>下一篇我们将会使用<code>await!()</code>来精简我们的Future`.</p>
 
-              </div>
-              <div class="toc-container">
-                <ul class="markdownIt-TOC">
-<li><a href="#intro">Intro</a>
-<ul>
-<li><a href="#foreach-combinator">ForEach combinator</a></li>
-<li><a href="#impl-stream">impl Stream</a></li>
-<li><a href="#simple-stream">Simple stream</a></li>
-<li><a href="#consume-a-stream">Consume a stream</a></li>
-<li><a href="#spawn-futures-during-the-event-loop">Spawn futures during the event loop</a></li>
-<li><a href="#next-steps">Next steps</a></li>
-</ul>
-</li>
-</ul>
-
-              </div>
             </div>
           </article>
         </div>
-
+        <div class="paper" data-aos="fade-in">
+          
+            <div class="next-post">
+              <div class="next">
+                下一篇
+              </div>
+              <a href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch">
+                <h3 class="post-title">
+                  深入浅出Rust Future - Part4 -  A real future from scratch
+                </h3>
+              </a>
+            </div>
+          
+        </div>
         
-          <div class="next-post">
-            <div class="next">下一篇</div>
-            <a href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch">
-              <h3 class="post-title">
-                深入浅出Rust Future - Part4 -  A real future from scratch
-              </h3>
-            </a>
-          </div>
-        
+      </div>
 
+      <div class="sm-12 md-4 col sidebar">
+  <div class="paper info-container">
+    <img src="https://rustc.io/images/avatar.png?v=1581188161799" class="no-responsive avatar">
+    <div class="text-muted">尽走歪路</div>
+    <div class="social-container">
+      
         
-
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
-  <a class="rss" href="https://rustc.io/atom.xml" target="_blank">
-    <i class="ri-rss-line"></i> RSS
-  </a>
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+  </div>
+  <div class="paper">
+    <div class="sidebar-title">
+      最新文章
+    </div>
+    <div class="row">
+      <ul>
+        
+          
+            <li>
+              <a href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part-5">深入浅出Rust Future - Part 5</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch">深入浅出Rust Future - Part4 -  A real future from scratch</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part3-the-reactor">深入浅出Rust Future - Part3 - The Reactor</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part-2">深入浅出Rust Future - Part 2</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/shen-ru-qian-chu-rust-future-part-1">深入浅出Rust Future - Part 1</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/chuang-jian-yi-ge-jian-dan-de-k8s-ying-yong">创建一个简单的k8s应用</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/kubernetes-rong-qi-ying-yong">kubernetes 容器应用</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/k8s-nei-bu-fu-zai-jun-heng-yuan-li">K8s内部负载均衡原理</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/php-yu-php-fpm-bu-de-bu-shuo-de-er-san-shi">PHP与PHP-FPM不得不说的二三事</a>
+            </li>
+          
+        
+          
+            <li>
+              <a href="https://rustc.io/post/k8s-for-iot-de-da-dan-cai-xiang"> K8S FOR IOT的大胆猜想</a>
+            </li>
+          
+        
+          
+        
+      </ul>
+    </div>
+  </div>
+  <div class="paper">
+    <div class="sidebar-title">
+      标签列表
+    </div>
+    <div class="row">
+      
+    </div>
+  </div>
+  <div class="paper">
+    Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://rustc.io/atom.xml" target="_blank">RSS</a>
+  </div>
 </div>
 
-      </div>
+
     </div>
 
-    <script>
-      hljs.initHighlightingOnLoad()
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
 
-      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+<script type="application/javascript">
 
-      // This should probably be throttled.
-      // Especially because it triggers during smooth scrolling.
-      // https://lodash.com/docs/4.17.10#throttle
-      // You could do like...
-      // window.addEventListener("scroll", () => {
-      //    _.throttle(doThatStuff, 100);
-      // });
-      // Only not doing it here to keep this Pen dependency-free.
+AOS.init();
 
-      window.addEventListener("scroll", event => {
-        let fromTop = window.scrollY;
+hljs.initHighlightingOnLoad()
 
-        mainNavLinks.forEach((link, index) => {
-          let section = document.getElementById(decodeURI(link.hash).substring(1));
-          let nextSection = null
-          if (mainNavLinks[index + 1]) {
-            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
-          }
-          if (section.offsetTop <= fromTop) {
-            if (nextSection) {
-              if (nextSection.offsetTop > fromTop) {
-                link.classList.add("current");
-              } else {
-                link.classList.remove("current");    
-              }
-            } else {
-              link.classList.add("current");
-            }
-          } else {
-            link.classList.remove("current");
-          }
-        });
-      });
+</script>
 
-    </script>
+
+
+
   </body>
 </html>
