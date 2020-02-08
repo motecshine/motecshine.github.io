@@ -1,0 +1,328 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gridea</title>
+<link rel="shortcut icon" href="http://localhost:4000/favicon.ico?v=1581187173473">
+<link href="https://cdn.remixicon.com/releases/v2.1.0/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="http://localhost:4000/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Gridea - Atom Feed" href="http://localhost:4000/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="温故而知新" />
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="http://localhost:4000">
+  <img class="avatar" src="http://localhost:4000/images/avatar.png?v=1581187173473" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="http://localhost:4000/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+    
+        <div class="post-container">
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-5">
+        <h2 class="post-title">深入浅出Rust Future - Part 5</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          8 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <p><a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-5---streams-5i8">原文:Rust futures: an uneducated, short and hopefully not boring tutorial - Part 5 - Streams</a></p>
+<h1 id="intro">Intro</h1>
+<p>在上篇文章中我们学习了如何实现一个高效率的<code>Future</code>(尽量不阻塞, 只有在需要时才会<code>Unpark</code>我们的<code>Task</code>).  今天继续扩展我们的<code>Future</code>: 实现一个<code>Stream Trait</code>.<br>
+<code>Stream</code>跟<code>Iterators</code>看起来很像: 他们随着时间的推移产生多个相同类型的输出, 与<code>Iterators</code>唯一的区别就是消费的方式不同. 让我们一起尝试使用<code>Reactor</code>来处理<code>Streams</code>吧.</p>
+
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch">
+        <h2 class="post-title">深入浅出Rust Future - Part4 -  A real future from scratch</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          10 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-4---a-real-future-from-scratch-734">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 4 - A &quot;real&quot; future from scratch</a></p>
+<h1 id="intro">Intro</h1>
+<p>上三篇文章我们阐述如何处理<code>Future</code>的基础知识， 我们现在能组织多个<code>Future</code>成为一个<code>Future chain</code>, 执行他们,甚至创建他们.但是到现在我们的<code>Future</code>还没有贴近我们日常的使用场景。(But, so far, our futures are not really delegating the execution to another thing.)<br>
+在Part-3中我们用了粗暴的方法来<code>Unpark Future</code>。虽然解决了问题，并且使<code>Reactor</code>变得相对高效，但是这不是最佳实践。今天就让我们换种更好的方式去实现<code>Future</code>。</p>
+
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part3-the-reactor">
+        <h2 class="post-title">深入浅出Rust Future - Part3 - The Reactor</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          10 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-3---the-reactor-433">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 3 - The reactor</a></p>
+<h1 id="intro">Intro</h1>
+<p>在这篇文章中我们将会讨论和阐释<code>Reactor</code>是如何工作的.在上篇文章中我们，我们频繁的使用<code>Reactor</code>来执行我们的<code>Future</code>，但是并没有阐述它是如何工作的。现在是时候阐明它了。</p>
+
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-2">
+        <h2 class="post-title">深入浅出Rust Future - Part 2</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          10 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-2-8dd">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 2</a></p>
+<h1 id="intro">Intro</h1>
+<p>在这个系列的第一篇文章我们了解了如何使用<code>Rust Future</code>.但是只有我们彻底的了解<code>Future</code>并且操作得当才能发挥它真正的作用。这个系列的第二篇文章，我们将介绍如何避免<code>Future</code>里常见的陷阱。</p>
+
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-1">
+        <h2 class="post-title">深入浅出Rust Future - Part 1</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          9 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/chuang-jian-yi-ge-jian-dan-de-k8s-ying-yong">
+        <h2 class="post-title">创建一个简单的k8s应用</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          5 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <h1 id="创建k8s应用">创建K8S应用</h1>
+<h2 id="前言">前言</h2>
+<p>从创建Docker Container开始一步一步给大家讲述如何创建自己的K8S应用.看懂这篇操作手册你可能需要<br>
+了解:</p>
+<ol>
+<li>Docker 命令的使用</li>
+<li>kubectl 命令的使用</li>
+<li>Yaml的使用</li>
+</ol>
+
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/kubernetes-rong-qi-ying-yong">
+        <h2 class="post-title">kubernetes 容器应用</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          5 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <h1 id="前言">前言</h1>
+<p>上一篇文章简单的介绍了<code>Kubernetes</code>内部的负载均衡原理，有朋友在群里反映不要一上来就将原理，想了想也是，那我就从如何创建一个<code>PHP Web</code>应用入手，带大家进入<code>Kubernetes</code>的世界。</p>
+
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/k8s-nei-bu-fu-zai-jun-heng-yuan-li">
+        <h2 class="post-title">K8s内部负载均衡原理</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          10 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <h1 id="前言">前言</h1>
+<blockquote>
+<p>个人理解有限，如有错误，请及时指正。</p>
+</blockquote>
+<p>前前后后学习<code>kubernetes</code>已经有三个月了，一直想写一遍关于<code>kubernetes</code>内部实现的一系列文章来作为这三个月的总结，个人觉得<code>kubernetes</code>背后的架构理念以及技术会成为中大型公司架构的未来。我推荐可以先阅读下Google的<a href="https://storage.googleapis.com/pub-tools-public-publication-data/pdf/43438.pdf">Large-scale cluster management at Google with Borg</a>技术文献，它是实现<code>kubernetes</code>的基石。</p>
+
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/php-yu-php-fpm-bu-de-bu-shuo-de-er-san-shi">
+        <h2 class="post-title">PHP与PHP-FPM不得不说的二三事</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          5 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <h2 id="前言">前言</h2>
+<p>说起PHP，大家肯定对PHP-FPM也不陌生，因为如果做Web的话经常与它打交道，公司新建blog，我来抛砖引玉，文章有错误的地方欢迎大家指正。<br>
+可能是一个系列将从 php-fpm讲起，会针对 ZendVM  词法编译，语法编译，粗暴的zend_mm和gc，zend_vm重要的数据结构(zend_array(php5 是hashtable)， zval)</p>
+
+      </div>
+    </article>
+  
+    <article class="post">
+      <a href="http://localhost:4000/post/k8s-for-iot-de-da-dan-cai-xiang">
+        <h2 class="post-title"> K8S FOR IOT的大胆猜想</h2>
+      </a>
+      <div class="post-info">
+        <span>
+          2020-02-09
+        </span>
+        <span>
+          2 min read
+        </span>
+        
+      </div>
+      
+      <div class="post-abstract">
+        <h1 id="前言">前言</h1>
+<p>全都是梦话</p>
+<h1 id="为何需要k8s">为何需要K8S</h1>
+<p>最近一直在思考物联网下C端设备HA问题，传统物联网IOT设备存在以下几个痛点：</p>
+<ul>
+<li>固件版本更新困难</li>
+<li>部署过程复杂</li>
+<li>假如固件有问题，往往需要运维人员到现场取回板子，维修时间长，维护过程复杂</li>
+<li>固件基本没有自愈能力</li>
+<li>无法合理利用IOT板子的有限的资源</li>
+<li>....</li>
+</ul>
+
+      </div>
+    </article>
+  
+</div>
+
+    
+        <div class="pagination-container">
+  
+  
+</div>
+
+    
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="http://localhost:4000/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+  </body>
+</html>

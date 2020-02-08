@@ -1,0 +1,342 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>深入浅出Rust Future - Part 1 | Gridea</title>
+<link rel="shortcut icon" href="http://localhost:4000/favicon.ico?v=1581187173473">
+<link href="https://cdn.remixicon.com/releases/v2.1.0/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="http://localhost:4000/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="深入浅出Rust Future - Part 1 | Gridea - Atom Feed" href="http://localhost:4000/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="译自Rust futures: an uneducated, short and hopefully not boring tutorial - Part 1
+Intro
+如果你是一个程序员并且也喜欢Rust这门语言, 那么你应该经常在社区..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="http://localhost:4000">
+  <img class="avatar" src="http://localhost:4000/images/avatar.png?v=1581187173473" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="http://localhost:4000/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              深入浅出Rust Future - Part 1
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-02-09
+              </span>
+              <span>
+                9 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-1-3k3">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 1</a></p>
+<h1 id="intro">Intro</h1>
+<p>如果你是一个程序员并且也喜欢Rust这门语言, 那么你应该经常在社区听到讨论<code>Future</code> 这个库的声音, 一些很优秀的<code>Rust Crates</code>都使用了<code>Future</code> 所以我们也应该对它有足够的了解并且使用它. 但是大多数程序员很难理解<code>Future</code>到底是怎么工作的, 当然有官方 <code>Crichton's tutorial</code>这样的教程, 虽然很完善, 但我还是很难理解并把它付诸实践.</p>
+<p>我猜测我并不是唯一一个遇到这样问题的程序员, 所以我将分享我自己的最佳实践, 希望这能帮助你理解这个话题.</p>
+<h2 id="futures-in-a-nutshell">Futures in a nutshell</h2>
+<p><code>Future</code> 是一个不会立即执行的特殊<code>functions</code>. 他会在将来执行(这也是他被命名为<code>future</code>的原因).我们有很多理由让<code>future functions</code>来替代<code>std functions</code>，例如: <code>优雅</code>，<code>性能</code>，<code>可组合性</code>.<code>future</code>的缺点也很明显: 很难用代码去实现. 当你不知道何时会执行某个函数时, 你又怎么能理解他们之间的因果关系呢？</p>
+<p>处于这个原因， Rust会试图帮助我们这些菜鸟程序员去理解和使用<code>future</code>这个特性。</p>
+<h2 id="rusts-futures">Rust's futures</h2>
+<p>Rust 的<code>futures</code> 总是一个<code>Results</code>: 这意味着你必须同时指定期待的返回值和备用的错误类型。<br>
+让我们先简单的实现一个方法，然后把它改造成<code>future</code>. 我们设计的这个方法返回值是 <code>u32</code> 或者是一个 被<code>Box</code>包围着的<code>Error trait</code>， 代码如下所示:</p>
+<pre><code>fn my_fn() -&gt; Result&lt;u32, Box&lt;Error&gt;&gt; {
+    Ok(100)
+}
+</code></pre>
+<p>这段代码很简单，看起来并没有涉及到<code>future</code>. 接下来让我们看看下面的代码:</p>
+<pre><code>fn my_fut() -&gt; impl Future&lt;Item = u32, Error = Box&lt;Error&gt;&gt; {
+    ok(100)
+}
+</code></pre>
+<p>注意这两段代码不同的地方:</p>
+<ol>
+<li>返回的类型不再是<code>Result</code>而是一个<code>impl Future</code>. <code>Rust Nightly</code>版本是允许我们返回一个<code>future</code>的。</li>
+<li>第二个函数返回值的参量<code>Item = u32, Error = Box&lt;Error&gt;</code>较第一个函数来看更加详细明确。</li>
+</ol>
+<blockquote>
+<p>为了能让第二段代码工作 你需要使用拥有<code>conservative_impl_trait</code>特性的<code>nightly</code>版本。当然，如果不嫌麻烦,你可以使用<code>boxed trait</code>来替代。</p>
+</blockquote>
+<p>另请注意第一个函数返回值使用的是大写的<code>Ok(100)</code>。 在<code>Result</code>函数中，我们使用大写的<code>Ok</code>枚举，而<code>future</code>我们使用小写的ok方法.</p>
+<blockquote>
+<p>规则: 在Rust<code>future</code>中使用小写返回方法<code>ok(100)</code>.</p>
+</blockquote>
+<p>好了现在我们改造完毕了，但是我们该怎样执行第二个我们改造好的方法？标准方法我们可以直接调用，但是这里需要注意的是地一个方法返回值是一个<code>Result</code>, 所以我们需要使用<code>unwrap()</code>来获取我们期待的值。</p>
+<pre><code>let retval = my_fn().unwrap();
+println!(&quot;{:?}&quot;, retval);
+</code></pre>
+<p>由于<code>future</code>在实际执行之前返回(或者更准确的说, 返回的是我们将来要执行的代码), 我们需要一种途径去执行<code>future</code>。为此我们使用<code>Reactor</code>。我们只需要创建一个<code>Reactor</code>并且调用他的<code>run</code>方法就可以执行<code>future</code>. 就像下面的代码：</p>
+<pre><code>let mut reactor = Core::new().unwrap();
+
+let retval = reactor.run(my_fut()).unwrap();
+println!(&quot;{:?}&quot;, retval);
+
+</code></pre>
+<p>注意这里我们<code>unwrap</code>的是<code>run</code>方法，而不是<code>my_fut</code>.<br>
+看起来真的很简单。</p>
+<h2 id="chaining">Chaining</h2>
+<p><code>future</code>一个很重要的特性就是能够把其他的<code>future</code>组织起来形成一个<code>chain</code>. 举个栗子:</p>
+<blockquote>
+<p>你邀请你的父母一起吃晚饭通过email.<br>
+你在电脑前等待他们的回复<br>
+父母同意与你一起吃晚饭(或者因为一些原因拒绝了)。</p>
+</blockquote>
+<p><code>Chaining</code>就是这样的，让我们看一个简单的例子：</p>
+<pre><code>fn my_fn_squared(i: u32) -&gt; Result&lt;u32, Box&lt;Error&gt;&gt; {
+    Ok(i * i)
+}
+
+
+fn my_fut_squared(i: u32) -&gt; impl Future&lt;Item = u32, Error = Box&lt;Error&gt;&gt; {
+    ok(i * i)
+}
+</code></pre>
+<p>现在我们可以使用下面的方式去调用这两个函数：</p>
+<pre><code>let retval = my_fn().unwrap();
+println!(&quot;{:?}&quot;, retval);
+
+let retval2 = my_fn_squared(retval).unwrap();
+println!(&quot;{:?}&quot;, retval2);
+</code></pre>
+<p>当然我们也可以模拟<code>Reactor</code>来执行相同的代码:</p>
+<pre><code>let mut reactor = Core::new().unwrap();
+
+let retval = reactor.run(my_fut()).unwrap();
+println!(&quot;{:?}&quot;, retval);
+
+let retval2 = reactor.run(my_fut_squared(retval)).unwrap();
+println!(&quot;{:?}&quot;, retval2);
+</code></pre>
+<p>但还有更好的方法，在Rust中<code>future</code>也是一个<code>trait</code>他有很多种方法(这里我们会介绍些)，其中一个名为<code>and_then</code>的方法，在语义上完全符合我们最后写的代码片段。但是没有显式的执行<code>Reactor Run</code>, 让我们一起来看看下面的代码：</p>
+<pre><code>let chained_future = my_fut().and_then(|retval| my_fut_squared(retval));
+let retval2 = reactor.run(chained_future).unwrap();
+println!(&quot;{:?}&quot;, retval2);
+</code></pre>
+<p>让我们看看第一行:创建一个被叫做<code>chained_future</code>的<code>future</code>， 它把<code>my_fut</code>与<code>mu_fut_squared``future</code>串联了起来。<br>
+这里让人难以理解的部分是: 我们如何将上一个<code>future</code>的结果传递给下一个<code>future</code>?</p>
+<blockquote>
+<p>在Rust中我们可以通过闭包来捕获外部变量来传递<code>future</code>的值。</p>
+</blockquote>
+<p>可以这样想：</p>
+<ol>
+<li>调度并且执行<code>my_fut()</code></li>
+<li>当<code>my_fut()</code>执行完毕后，创建一个<code>retval</code>变量并且将<code>my_fut()</code>的返回值存到其中。</li>
+<li>现在将<code>retval</code>作为<code>my_fn_squared(i: u32)</code>的参数传递进去，并且调度执行<code>my_fn_squared</code>。</li>
+<li>把上面一些列的操作打包成一个名为<code>chained_future</code>的调用链。</li>
+</ol>
+<p>第二行代码,与之前的相同: 我们调用<code>Reactor run()</code>, 要求执行<code>chained_future</code>并给出结果。</p>
+<p>当然我们可以通过这种方式将无数个<code>future</code>打包成一个<code>chain</code>, 不要去担心性能问题, 因为<code>future chain</code>是 <code>zero cost</code>.</p>
+<blockquote>
+<p>RUST <code>borrow checked</code>可能让你的<code>future chain</code> 写起来不是那么的轻松，所以你可以尝试<code>move</code>你的参数变量.</p>
+</blockquote>
+<h2 id="mixing-futures-and-plain-functions">Mixing futures and plain functions</h2>
+<p>你也可以使用普通的函数来做<code>future chain</code>, 这很有用， 因为不是每个功能都需要使用<code>future</code>. 此外， 你也有可能希望调用外部你无法控制的函数。<br>
+如果函数没有返回Result，你只需在闭包中添加函数调用即可。 例如，如果我们有这个普通函数：</p>
+<pre><code>fn fn_plain(i: u32) -&gt; u32 {
+    i - 50
+}
+
+let chained_future = my_fut().and_then(|retval| {
+    let retval2 = fn_plain(retval);
+    my_fut_squared(retval2)
+});
+
+let retval3 = reactor.run(chained_future).unwrap();
+println!(&quot;{:?}&quot;, retval3);
+</code></pre>
+<p>如果你的函数返回<code>Result</code>则有更好的办法。我们一起来尝试将<code>my_fn_squared(i: u32) -&gt; Result&lt;u32, Box&lt;Error&gt;</code>方法打包进<code>future chain</code>。</p>
+<p>在这里由于返回值是<code>Result</code>所以你无法调用<code>and_then</code>, 但是<code>future</code>有一个方法<code>done()</code>可以将<code>Result</code>转换为<code>impl Future</code>.这意味着我们可以将普通的函数通过<code>done</code>方法把它包装成一个<code>future</code>.</p>
+<pre><code>let chained_future = my_fut().and_then(|retval| {
+    done(my_fn_squared(retval)).and_then(|retval2| my_fut_squared(retval2))
+});
+let retval3 = reactor.run(chained_future).unwrap();
+println!(&quot;{:?}&quot;, retval3);
+</code></pre>
+<p>注意第二：<code>done(my_fn_squared(retval))</code>允许我们在链式调用的原因是:我们将普通函数通过<code>done</code>方法转换成一个<code>impl Future</code>. 现在我们不使用<code>done</code>方法试试:</p>
+<pre><code>let chained_future = my_fut().and_then(|retval| {
+    my_fn_squared(retval).and_then(|retval2| my_fut_squared(retval2))
+});
+let retval3 = reactor.run(chained_future).unwrap();
+println!(&quot;{:?}&quot;, retval3);
+</code></pre>
+<p>编译不通过!</p>
+<pre><code>Compiling tst_fut2 v0.1.0 (file:///home/MINDFLAVOR/mindflavor/src/rust/tst_future_2)
+error[E0308]: mismatched types
+   --&gt; src/main.rs:136:50
+    |
+136 |         my_fn_squared(retval).and_then(|retval2| my_fut_squared(retval2))
+    |                                                  ^^^^^^^^^^^^^^^^^^^^^^^ expected enum `std::result::Result`, found anonymized type
+    |
+    = note: expected type `std::result::Result&lt;_, std::boxed::Box&lt;std::error::Error&gt;&gt;`
+               found type `impl futures::Future`
+
+error: aborting due to previous error
+
+error: Could not compile `tst_fut2`.
+</code></pre>
+<p><code>expected type std::result::Result&lt;_, std::boxed::Box&lt;std::error::Error&gt;&gt; found type impl futures::Future</code>,这个错误有点让人困惑. 我们将会在第二部分讨论它。</p>
+<h2 id="generics">Generics</h2>
+<p>最后但并非最不重要的， <code>future</code> 与 <code>generic</code>(这是啥玩意儿啊)一起工作不需要任何黑魔法.</p>
+<pre><code>fn fut_generic_own&lt;A&gt;(a1: A, a2: A) -&gt; impl Future&lt;Item = A, Error = Box&lt;Error&gt;&gt;
+where
+    A: std::cmp::PartialOrd,
+{
+    if a1 &lt; a2 {
+        ok(a1)
+    } else {
+        ok(a2)
+    }
+}
+</code></pre>
+<p>这个函数返回的是 a1 与 a2之间的较小的值。但是即便我们很确定这个函数没有错误也需要给出<code>Error</code>，此外，返回值在这种情况下是小写的<code>ok</code>(原因是函数， 而不是<code>enmu</code>)</p>
+<p>现在我们调用这个<code>future</code>:</p>
+<pre><code>let future = fut_generic_own(&quot;Sampdoria&quot;, &quot;Juventus&quot;);
+let retval = reactor.run(future).unwrap();
+println!(&quot;fut_generic_own == {}&quot;, retval);
+</code></pre>
+<p>阅读到现在你可能对<code>future</code>应该有所了解了， 在这边文章里你可能注意到我没有使用<code>&amp;</code>, 并且仅使用函数自身的值。这是因为使用<code>impl Future</code>，生命周期的行为并不相同，我将在下一篇文章中解释如何使用它们。在下一篇文章中我们也会讨论如何在<code>future chain</code>处理错误和使用await!()宏。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#intro">Intro</a>
+<ul>
+<li><a href="#futures-in-a-nutshell">Futures in a nutshell</a></li>
+<li><a href="#rusts-futures">Rust's futures</a></li>
+<li><a href="#chaining">Chaining</a></li>
+<li><a href="#mixing-futures-and-plain-functions">Mixing futures and plain functions</a></li>
+<li><a href="#generics">Generics</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="http://localhost:4000/post/chuang-jian-yi-ge-jian-dan-de-k8s-ying-yong">
+              <h3 class="post-title">
+                创建一个简单的k8s应用
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="http://localhost:4000/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

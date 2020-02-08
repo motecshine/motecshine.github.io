@@ -1,0 +1,446 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>创建一个简单的k8s应用 | Gridea</title>
+<link rel="shortcut icon" href="http://localhost:4000/favicon.ico?v=1581187173473">
+<link href="https://cdn.remixicon.com/releases/v2.1.0/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="http://localhost:4000/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="创建一个简单的k8s应用 | Gridea - Atom Feed" href="http://localhost:4000/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="创建K8S应用
+前言
+从创建Docker Container开始一步一步给大家讲述如何创建自己的K8S应用.看懂这篇操作手册你可能需要
+了解:
+
+Docker 命令的使用
+kubectl 命令的使用
+Yaml的使用
+
+
+概念
+Docker
+..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="http://localhost:4000">
+  <img class="avatar" src="http://localhost:4000/images/avatar.png?v=1581187173473" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="http://localhost:4000/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              创建一个简单的k8s应用
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-02-09
+              </span>
+              <span>
+                5 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="创建k8s应用">创建K8S应用</h1>
+<h2 id="前言">前言</h2>
+<p>从创建Docker Container开始一步一步给大家讲述如何创建自己的K8S应用.看懂这篇操作手册你可能需要<br>
+了解:</p>
+<ol>
+<li>Docker 命令的使用</li>
+<li>kubectl 命令的使用</li>
+<li>Yaml的使用</li>
+</ol>
+<!-- more -->
+<h2 id="概念">概念</h2>
+<h5 id="docker">Docker</h5>
+<ul>
+<li>Docker Registry是什么？
+<ul>
+<li>他是存储docker镜像的仓库, 如果你熟悉git，那么上手这个也很快, 你需要了解到的几个命令:</li>
+<li>docker push (上传镜像)</li>
+<li>docker pull (拉取镜像)</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>常用的仓储有 https://index.docker.io</p>
+</blockquote>
+<ul>
+<li>
+<p>Docker Container 与 Docker Image 之间的关系？</p>
+<ul>
+<li>所有的Docker Container 都是以 Docker Image为蓝本创建的</li>
+<li>Docker Image 可以理解为一个还没装到你电脑上的Win7系统镜像，Docker Container是已经装到你的电脑上的系统.</li>
+</ul>
+</li>
+<li>
+<p>如何基于Dockerfile创建一个Docker Container？</p>
+</li>
+</ul>
+<pre><code># Docker Hub 拉取ubuntu 基础镜像，并以它为蓝本创建自己的镜像
+FROM ubuntu
+# 维护者
+MAINTAINER docker_user docker_user@email.com
+# 更新ubuntu系统
+RUN echo &quot;deb http://archive.ubuntu.com/ubuntu/ raring main universe&quot; &gt;&gt; /etc/apt/sources.list
+# 安装Nginx
+RUN apt-get update &amp;&amp; apt-get install -y nginx
+# 为了保证容器与nginx生命周期一致，所有的程序不建议用background的方式运行
+RUN echo &quot;\ndaemon off;&quot; &gt;&gt; /etc/nginx/nginx.conf
+# Docker Container 运行时需要执行的命令
+CMD /usr/sbin/nginx
+</code></pre>
+<h6 id="k8s">K8S</h6>
+<ul>
+<li>
+<p>POD 是什么？</p>
+<ul>
+<li>是K8S里最小可运行的单元，一个POD里至少需要一个Docker Container。</li>
+</ul>
+</li>
+<li>
+<p>Service 是什么？</p>
+<blockquote>
+<p>Container需要对外服务，以Nginx为例子，来描述Service创建过程</p>
+</blockquote>
+<ol>
+<li>Container 暴露一个端口映射到POD端口上(K8S会分给POD一个内部的Cluster IP)</li>
+<li>POD 暴露出相应的端口。</li>
+<li>Service 通过K8S的Label标签功能,发现POD，以及POD暴露出来的端口</li>
+</ol>
+</li>
+<li>
+<p>Ingress 是什么</p>
+<ul>
+<li>Ingress是一个互联网入口，可以看做一个简单的Nginx，Ingress通过KUBE-PROXY将外部访问流量引导至Service上</li>
+</ul>
+</li>
+</ul>
+<h2 id="创建流程">创建流程</h2>
+<blockquote>
+<p>main.go</p>
+</blockquote>
+<pre><code class="language-golang">package main
+
+import (
+    &quot;net/http&quot;
+)
+
+func SayHello(w http.ResponseWriter, req *http.Request) {
+    w.Write([]byte(&quot;Hello World&quot;))
+}
+
+func main() {
+    http.HandleFunc(&quot;/hello&quot;, SayHello)
+    http.ListenAndServe(&quot;:8001&quot;, nil)
+
+}
+</code></pre>
+<h5 id="创建基准docker-image">创建基准Docker Image</h5>
+<pre><code class="language-bash"># 以BusyBox做为基准镜像创建我们自己的Docker Image
+FROM busybox
+# 设置工作目录
+WORKDIR /go/src/app
+# 把当前目录的二进制文件放到Docker Images
+COPY . .
+# 纠正时间
+RUN  cp -r -f Shanghai /etc/localtime &amp;&amp; echo 'Asia/Shanghai' &gt;/etc/timezone 
+# 运行时执行的命令
+CMD [&quot;/go/src/app/helloworld&quot;]
+</code></pre>
+<h5 id="创建pod">创建POD</h5>
+<blockquote>
+<p>deployment.yaml</p>
+</blockquote>
+<pre><code class="language-yaml"># 使用k8s哪一个版本的API
+apiVersion: extensions/v1beta1 
+# 以Deployment方式创建POD， 这里有很多类型以后有机会再讲
+kind: Deployment
+metadata:
+  # 创建的POD名字K8S内部会hash这个值
+  name: helloworld
+  # 指定在哪个namespace下创建
+  namespace: frm
+spec:
+  # 部署副本数量
+  replicas: 3
+  # 保留历史版本的副本数量的上限值
+  revisionHistoryLimit: 5
+  template:
+    metadata:
+      labels:
+        # Service 通过这个值讲 SVC与POD关联上
+        app: helloworld
+        version: production
+    spec:
+      containers:
+      # 创建的ContainerName
+      - name: helloworld
+        # docker image 地址
+        image: helloworld:v1.3
+        # 触发滚动更新的规则
+        imagePullPolicy: IfNotPresent
+        # 资源限制
+        resources:
+          limits:
+            cpu: 80m
+            memory: 80Mi
+          requests:
+            cpu: 20m
+            memory: 20Mi 
+        # container 暴露出来的端口
+        ports:
+        - name: helloworld-port
+          containerPort: 80
+        # 挂载目录  
+        volumeMounts:
+        - mountPath: /go/src/app/logs
+          name: log  
+     # 指定该POD卷挂载到宿主机目录
+      volumes:
+      - name: log
+        hostPath:
+          path: /home/data/logs/helloworld # 宿主及目录
+          type: Directory
+
+</code></pre>
+<h5 id="创建service">创建Service</h5>
+<blockquote>
+<p>service.yaml</p>
+</blockquote>
+<pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld-srv
+  namespace: frm
+  labels:
+    # Service 的Label, Ingress通过这个来关联Service
+    app: helloworld-srv
+    version: production
+spec:
+  type: ClusterIP
+  selector:
+    # 选择一个POD Label
+    app: helloworld
+    version: production
+  # 选择POD暴露的端口  
+  ports:
+    - name: http
+      port: 80
+</code></pre>
+<h5 id="创建ingress">创建Ingress</h5>
+<blockquote>
+<p>ingress.yaml</p>
+</blockquote>
+<pre><code class="language-yaml">apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: helloworld-ingress
+  namespace: frm
+  labels:
+    app: helloworld-ingress
+spec:
+  rules:
+  ### 指定域名
+  - host: helloworld.test
+    http:
+      paths:
+      - path: /
+        backend:
+          # 选择绑定哪个service
+          serviceName: helloworld-srv
+          servicePort: 80
+</code></pre>
+<h5 id="创建命令">创建命令</h5>
+<blockquote>
+<p>kubectl create -f deployment.yaml service.yaml ingress.yaml</p>
+</blockquote>
+<h2 id="流程">流程</h2>
+<blockquote>
+<p>User Request -&gt; Ingress Port-&gt; Service -&gt; Pod -&gt; Container</p>
+</blockquote>
+<h2 id="问题排查">问题排查</h2>
+<ol>
+<li>
+<p>构建Docker Image后先自己 docker run 一下来确认构建是否是成功的!</p>
+</li>
+<li>
+<p>创建失败 ，查看POD创建状态</p>
+</li>
+</ol>
+<ul>
+<li><code>kubectl describe pods POD_NAME -n NAMESPACE</code></li>
+</ul>
+<ol start="3">
+<li>创建失败 ，查看POD LOG</li>
+</ol>
+<ul>
+<li><code>kubectl log POD_NAME -n NAMESPACE</code></li>
+</ul>
+<ol start="4">
+<li>POD启动成功但是无法访问</li>
+</ol>
+<ul>
+<li><code>kubectl get svc,ingresss,pod -n NAMESPACE</code></li>
+</ul>
+<ol start="5">
+<li>查看service的状态</li>
+</ol>
+<ul>
+<li><code>kubectl exec -it POD_NAME -n NAMESPACE -c CONTAINER_NAME</code>，进入有问题的容器看看</li>
+</ul>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E5%88%9B%E5%BB%BAk8s%E5%BA%94%E7%94%A8">创建K8S应用</a>
+<ul>
+<li><a href="#%E5%89%8D%E8%A8%80">前言</a></li>
+<li><a href="#%E6%A6%82%E5%BF%B5">概念</a><br>
+*<br>
+*<br>
+* <a href="#docker">Docker</a><br>
+* <a href="#k8s">K8S</a></li>
+<li><a href="#%E5%88%9B%E5%BB%BA%E6%B5%81%E7%A8%8B">创建流程</a><br>
+*<br>
+*<br>
+* <a href="#%E5%88%9B%E5%BB%BA%E5%9F%BA%E5%87%86docker-image">创建基准Docker Image</a><br>
+* <a href="#%E5%88%9B%E5%BB%BApod">创建POD</a><br>
+* <a href="#%E5%88%9B%E5%BB%BAservice">创建Service</a><br>
+* <a href="#%E5%88%9B%E5%BB%BAingress">创建Ingress</a><br>
+* <a href="#%E5%88%9B%E5%BB%BA%E5%91%BD%E4%BB%A4">创建命令</a></li>
+<li><a href="#%E6%B5%81%E7%A8%8B">流程</a></li>
+<li><a href="#%E9%97%AE%E9%A2%98%E6%8E%92%E6%9F%A5">问题排查</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="http://localhost:4000/post/kubernetes-rong-qi-ying-yong">
+              <h3 class="post-title">
+                kubernetes 容器应用
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="http://localhost:4000/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

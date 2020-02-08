@@ -1,0 +1,414 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>深入浅出Rust Future - Part 5 | Gridea</title>
+<link rel="shortcut icon" href="http://localhost:4000/favicon.ico?v=1581187173473">
+<link href="https://cdn.remixicon.com/releases/v2.1.0/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="http://localhost:4000/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="深入浅出Rust Future - Part 5 | Gridea - Atom Feed" href="http://localhost:4000/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="原文:Rust futures: an uneducated, short and hopefully not boring tutorial - Part 5 - Streams
+Intro
+在上篇文章中我们学习了如何实现一个高效率的Fu..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="http://localhost:4000">
+  <img class="avatar" src="http://localhost:4000/images/avatar.png?v=1581187173473" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="http://localhost:4000/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              深入浅出Rust Future - Part 5
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-02-09
+              </span>
+              <span>
+                8 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <p><a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-5---streams-5i8">原文:Rust futures: an uneducated, short and hopefully not boring tutorial - Part 5 - Streams</a></p>
+<h1 id="intro">Intro</h1>
+<p>在上篇文章中我们学习了如何实现一个高效率的<code>Future</code>(尽量不阻塞, 只有在需要时才会<code>Unpark</code>我们的<code>Task</code>).  今天继续扩展我们的<code>Future</code>: 实现一个<code>Stream Trait</code>.<br>
+<code>Stream</code>跟<code>Iterators</code>看起来很像: 他们随着时间的推移产生多个相同类型的输出, 与<code>Iterators</code>唯一的区别就是消费的方式不同. 让我们一起尝试使用<code>Reactor</code>来处理<code>Streams</code>吧.</p>
+<!-- more -->
+<h2 id="foreach-combinator">ForEach combinator</h2>
+<p>我们使用一个名为<code>for_each</code>的组合器, 来代替我们手动迭代消费<code>Stream</code>. 查询文档不难发现<code>future::stream</code>实现了<code>ForEach</code>, 所以我们不仅可以迭代, 也可以把<code>stream</code>放入<code>Reactor</code>, 把它作为<code>Future Chain</code>的一部分. 这看起来简直太酷了.现在让我们一步一步来实现一个简单的<code>Stream</code>.</p>
+<h2 id="impl-stream">impl Stream</h2>
+<p><code>Stream Trait</code> 与 <code>Future Trait</code>很像:</p>
+<pre><code>pub trait Future {
+    type Item;
+    type Error;
+    fn poll(&amp;mut self) -&gt; Poll&lt;Self::Item, Self::Error&gt;;
+
+    // &lt;-- CUT --&gt;
+}
+
+pub trait Stream {
+    type Item;
+    type Error;
+    fn poll(&amp;mut self) -&gt; Poll&lt;Option&lt;Self::Item&gt;, Self::Error&gt;;
+
+    // &lt;-- CUT --&gt;
+}
+</code></pre>
+<p>这两个<code>Trait</code>都有很多的函数, 由于这些函数都有默认值, 因此如果你不需要它, 就无需实现他们. 在本篇文章里我们只关注<code>poll</code>这个方法.</p>
+<pre><code>    // Future
+    fn poll(&amp;mut self) -&gt; Poll&lt;Self::Item, Self::Error&gt;;
+
+    // Stream
+    fn poll(&amp;mut self) -&gt; Poll&lt;Option&lt;Self::Item&gt;, Self::Error&gt;;
+</code></pre>
+<p>对比下<code>Future</code>与<code>Stream</code>两者<code>poll</code>函数的区别:</p>
+<table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Future</th>
+<th>Stream</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Item to return ready</td>
+<td>Ok(Async::Ready(t))</td>
+<td>Ok(Async::Ready(Some(t)))</td>
+</tr>
+<tr>
+<td>Item to return not ready</td>
+<td>Ok(Async::NotReady)</td>
+<td>Ok(Async::NotReady)</td>
+</tr>
+<tr>
+<td>No more items to return</td>
+<td>N.A.</td>
+<td>Ok(Async::Ready(None))</td>
+</tr>
+<tr>
+<td>Error</td>
+<td>Err(e)</td>
+<td>Err(e)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="simple-stream">Simple stream</h2>
+<p>让我们一起实现一个简单的<code>stream</code>:</p>
+<pre><code>struct MyStream {
+    current: u32,
+    max: u32,
+}
+
+impl MyStream {
+    pub fn new(max: u32) -&gt; MyStream {
+        MyStream {
+            current: 0,
+            max: max,
+        }
+    }
+}
+
+impl Stream for MyStream {
+    type Item = u32;
+    type Error = Box&lt;Error&gt;;
+
+    fn poll(&amp;mut self) -&gt; Poll&lt;Option&lt;Self::Item&gt;, Self::Error&gt; {
+        match self.current {
+            ref mut x if *x &lt; self.max =&gt; {
+                *x = *x + 1;
+                Ok(Async::Ready(Some(*x)))
+            }
+            _ =&gt; Ok(Async::Ready(None)),
+        }
+    }
+}
+</code></pre>
+<p>我们重点关注下<code>poll</code>函数, 形参传递了一个可变引用, 所以我们可以改变<code>MyStream</code>内部的值. 这段代码理解起来很容易:</p>
+<blockquote>
+<p>检查<code>MyStream.current</code>是否大于 <code>MyStream.max</code> 如果大于: 返回<code>Ok(Async::Ready(None))</code>, 否则<code>MyStream.current</code>自增<code>1</code>并且返回当前的值.</p>
+</blockquote>
+<h2 id="consume-a-stream">Consume a stream</h2>
+<pre><code>let mut reactor = Core::new().unwrap();
+let my_stream = MyStream::new(5);
+
+let fut = my_stream.for_each(|num| {
+    println!(&quot;num === {}&quot;, num);
+    ok(())
+});
+</code></pre>
+<p>注意<code>ok(())</code>, 这段代码意味着我们返回的是个<code>Future</code>, 所以我们不仅可以使用<code>Reactor</code>执行<code>fut</code>, 也可以跟别的<code>Future</code>, 组合成<code>Future Chain</code>.</p>
+<h2 id="spawn-futures-during-the-event-loop">Spawn futures during the event loop</h2>
+<p>我们在处理<code>Stream</code>时, 有时候想创建(spawn:派生)新的<code>Future</code>, 这样做理由有很多, 比如不想阻塞当前的<code>Future Task</code>, <code>Rust</code> 是允许我们使用<code>Reactor</code>的<code>execute</code>函数将创建的<code>Future</code>加入现有的事件循环中的. 然而这有一个陷阱: <code>execute</code> 返回的是<code>Result&lt;(), ExecuteError&lt;f&gt;&gt;</code>, 可以看出这个函数正常返回时,没有任何的值.</p>
+<pre><code>
+impl Stream for MyStream {
+    type Item = u32;
+    type Error = Box&lt;Error&gt;;
+
+    fn poll(&amp;mut self) -&gt; Poll&lt;Option&lt;Self::Item&gt;, Self::Error&gt; {
+        use futures::future::Executor;
+
+        match self.current {
+            ref mut x if *x &lt; self.max =&gt; {
+                *x = *x + 1;
+
+                self.core_handle.execute(WaitInAnotherThread::new(
+                    Duration::seconds(2),
+                    format!(&quot;WAIT {:?}&quot;, x),
+                ));
+                Ok(Async::Ready(Some(*x)))
+            }
+            _ =&gt; Ok(Async::Ready(None)),
+        }
+    }
+}
+
+</code></pre>
+<p>这里需要关注的是<code>execute</code>这段代码, 它产生一个新的<code>Future</code>(等待两秒, 然后打印x), 不过请记住, 这个<code>future</code>将不会返回任何值(除了<code>Error</code>), 所以我们当且仅当把他是一个<code>Daemon-like</code>线程.</p>
+<p>测试Code:</p>
+<pre><code>
+fn main() {
+    let mut reactor = Core::new().unwrap();
+
+    // create a Stream returning 5 items
+    // Each item will spawn an &quot;inner&quot; future
+    // into the same reactor loop
+    let my_stream = MyStream::new(5, reactor.handle());
+
+    // we use for_each to consume
+    // the stream
+    let fut = my_stream.for_each(|num| {
+        println!(&quot;num === {:?}&quot;, num);
+        ok(())
+    });
+
+    // this is a manual future. it's the same as the
+    // future spawned into our stream
+    let wait = WaitInAnotherThread::new(Duration::seconds(3), &quot;Manual3&quot;.to_owned());
+
+    // we join the futures to let them run concurrently
+    let future_joined = fut.map_err(|err| {}).join(wait);
+
+    // let's run the future
+    let ret = reactor.run(future_joined).unwrap();
+    println!(&quot;ret == {:?}&quot;, ret);
+}
+
+</code></pre>
+<p>上端代码我们展示了如何连接<code>Stream</code>和<code>Future</code>. 现在让我尝试跑一下我们的代码:</p>
+<pre><code>
+num === 1
+num === 2
+num === 3
+num === 4
+num === 5
+&quot;Manual3&quot; starting the secondary thread!
+&quot;Manual3&quot; not ready yet! parking the task.
+&quot;WAIT 1&quot; starting the secondary thread!
+&quot;WAIT 1&quot; not ready yet! parking the task.
+&quot;WAIT 2&quot; starting the secondary thread!
+&quot;WAIT 2&quot; not ready yet! parking the task.
+&quot;WAIT 3&quot; starting the secondary thread!
+&quot;WAIT 3&quot; not ready yet! parking the task.
+&quot;WAIT 4&quot; starting the secondary thread!
+&quot;WAIT 4&quot; not ready yet! parking the task.
+&quot;WAIT 5&quot; starting the secondary thread!
+&quot;WAIT 5&quot; not ready yet! parking the task.
+&quot;WAIT 1&quot; the time has come == 2017-12-06T10:23:30.853796527Z!
+&quot;WAIT 1&quot; ready! the task will complete.
+&quot;WAIT 2&quot; the time has come == 2017-12-06T10:23:30.853831227Z!
+&quot;WAIT 2&quot; ready! the task will complete.
+&quot;WAIT 3&quot; the time has come == 2017-12-06T10:23:30.853842927Z!
+&quot;WAIT 3&quot; ready! the task will complete.
+&quot;WAIT 5&quot; the time has come == 2017-12-06T10:23:30.853856927Z!
+&quot;WAIT 5&quot; ready! the task will complete.
+&quot;WAIT 4&quot; the time has come == 2017-12-06T10:23:30.853850427Z!
+&quot;WAIT 4&quot; ready! the task will complete.
+&quot;Manual3&quot; the time has come == 2017-12-06T10:23:31.853775627Z!
+&quot;Manual3&quot; ready! the task will complete.
+ret == ((), ())
+
+</code></pre>
+<p>这个结果不是唯一的, 你和我的输出也许有所不同, 如果我们没有派生等待3s的<code>Future</code>, 结果是否就会有所不同?</p>
+<pre><code>
+fn main() {
+    let mut reactor = Core::new().unwrap();
+
+    // create a Stream returning 5 items
+    // Each item will spawn an &quot;inner&quot; future
+    // into the same reactor loop
+    let my_stream = MyStream::new(5, reactor.handle());
+
+    // we use for_each to consume
+    // the stream
+    let fut = my_stream.for_each(|num| {
+        println!(&quot;num === {:?}&quot;, num);
+        ok(())
+    });
+
+    // let's run the future
+    let ret = reactor.run(fut).unwrap();
+    println!(&quot;ret == {:?}&quot;, ret);
+}
+
+</code></pre>
+<p>我们会注意到这段代码几乎会立即返回下面的值:</p>
+<pre><code>
+num === 1
+num === 2
+num === 3
+num === 4
+num === 5
+ret == ()
+
+</code></pre>
+<p><code>poll</code> 函数里派生出的<code>Future</code>没有机会运行.</p>
+<h2 id="next-steps">Next steps</h2>
+<p>下一篇我们将会使用<code>await!()</code>来精简我们的Future`.</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#intro">Intro</a>
+<ul>
+<li><a href="#foreach-combinator">ForEach combinator</a></li>
+<li><a href="#impl-stream">impl Stream</a></li>
+<li><a href="#simple-stream">Simple stream</a></li>
+<li><a href="#consume-a-stream">Consume a stream</a></li>
+<li><a href="#spawn-futures-during-the-event-loop">Spawn futures during the event loop</a></li>
+<li><a href="#next-steps">Next steps</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part4-a-real-future-from-scratch">
+              <h3 class="post-title">
+                深入浅出Rust Future - Part4 -  A real future from scratch
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="http://localhost:4000/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

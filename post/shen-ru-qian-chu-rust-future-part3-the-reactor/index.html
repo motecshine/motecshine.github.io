@@ -1,0 +1,466 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>深入浅出Rust Future - Part3 - The Reactor | Gridea</title>
+<link rel="shortcut icon" href="http://localhost:4000/favicon.ico?v=1581187173473">
+<link href="https://cdn.remixicon.com/releases/v2.1.0/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="http://localhost:4000/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="深入浅出Rust Future - Part3 - The Reactor | Gridea - Atom Feed" href="http://localhost:4000/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="译自Rust futures: an uneducated, short and hopefully not boring tutorial - Part 3 - The reactor
+Intro
+在这篇文章中我们将会讨论和阐释React..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="http://localhost:4000">
+  <img class="avatar" src="http://localhost:4000/images/avatar.png?v=1581187173473" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="http://localhost:4000/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              深入浅出Rust Future - Part3 - The Reactor
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-02-09
+              </span>
+              <span>
+                10 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <p>译自<a href="https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-3---the-reactor-433">Rust futures: an uneducated, short and hopefully not boring tutorial - Part 3 - The reactor</a></p>
+<h1 id="intro">Intro</h1>
+<p>在这篇文章中我们将会讨论和阐释<code>Reactor</code>是如何工作的.在上篇文章中我们，我们频繁的使用<code>Reactor</code>来执行我们的<code>Future</code>，但是并没有阐述它是如何工作的。现在是时候阐明它了。</p>
+<!-- more -->
+<h2 id="reactor-loop">Reactor? Loop?</h2>
+<p>如果用一句话来描述<code>Reactor</code>，那应该是:</p>
+<blockquote>
+<p><code>Reactor</code>是一个环(<code>Loop</code>)</p>
+</blockquote>
+<p>举个栗子：<br>
+你决定通过Email邀请你喜欢的女孩或者男孩(emmm, 这个栗子听起来很老套), 你怀着忐忑的心将这份邮件发送出去，心里焦急着等待着， 不停的一遍又一遍的检查你的邮箱是否有新的回复. 直到收到回复。<br>
+<code>Rust's Reactor</code>就是这样， 你给他一个<code>future</code>, 他会不断的检查，直到这个<code>future</code>完成(或者返回错误). <code>Reactor</code>通过调用程序员实现的<code>Poll</code>函数，来检查<code>Future</code>是否已完成。你所要做的就是实现<code>future poll</code> 并且返回<code>Poll&lt;T, E&gt;</code>结构。但是 <code>Reactor</code>也不会无休止的对你的<code>future function</code>轮询。</p>
+<h2 id="a-future-from-scratch">A future from scratch</h2>
+<p>为了让我们能更容易理解<code>Reactor</code>知识，我们还是从零开始实现一个<code>Future</code>. 换句话说就是，我们将动手实现<code>Future Trait</code>.</p>
+<pre><code>#[derive(Debug)]
+struct WaitForIt {
+    message: String,
+    until: DateTime&lt;Utc&gt;,
+    polls: u64,
+}
+</code></pre>
+<p>我们的结构体字段也很简单:</p>
+<ul>
+<li>message： 自定义字符串消息体</li>
+<li>polls: 轮循次数</li>
+<li>util: 等待时间</li>
+</ul>
+<p>我们还会实现 <code>WaitFotIt</code>结构体的<code>new</code>方法.这个方法作用是初始化<code>WaitForIt</code></p>
+<pre><code>impl WaitForIt {
+    pub fn new(message: String, delay: Duration) -&gt; WaitForIt {
+        WaitForIt {
+            polls: 0,
+            message: message,
+            until: Utc::now() + delay,
+        }
+    }
+}
+
+impl Future for WaitForIt {
+    type Item = String;
+    type Error = Box&lt;Error&gt;;
+
+    fn poll(&amp;mut self) -&gt; Poll&lt;Self::Item, Self::Error&gt; {
+        let now = Utc::now();
+        if self.until &lt; now {
+            Ok(Async::Ready(
+                format!(&quot;{} after {} polls!&quot;, self.message, self.polls),
+            ))
+        } else {
+            self.polls += 1;
+
+            println!(&quot;not ready yet --&gt; {:?}&quot;, self);
+            Ok(Async::NotReady)
+        }
+    }
+}
+</code></pre>
+<p>让我们逐步解释</p>
+<pre><code>    type Item = String;
+    type Error = Box&lt;Error&gt;;
+</code></pre>
+<p>上面两行在<code>RUST</code>里被叫做<code>associated types</code>, 意思就是<code>Future</code>在将来完成时返回的值(或者错误).</p>
+<pre><code>    fn poll(&amp;mut self) -&gt; Poll&lt;Self::Item, Self::Error&gt; {}
+</code></pre>
+<p>定义轮询的方法。<code>Self::Item, Self::Error</code> 是我们定义的<code>associated types</code>站位符。在我们的例子中，该方法如下：</p>
+<pre><code>fn poll（＆mut self） - &gt; Poll &lt;String，Box &lt;Error &gt;&gt;
+</code></pre>
+<p>现在看看我们的逻辑代码:</p>
+<pre><code>let now = Utc::now();
+if self.until &lt; now {
+// 告诉reactor `Future` 已经完成了！
+} else {
+// 告诉 reactor `Future` 还没准备好，过会儿再来。
+}
+</code></pre>
+<p>在<code>Rust</code>里我们该怎样告诉<code>Reactor</code>某个<code>Future</code>已经完成了？很简单使用枚举</p>
+<pre><code>Ok(Async::NotReady(.......)) // 还没完成
+Ok(Async::Ready(......)) // 完成了
+</code></pre>
+<p>让我们来实现上述的方法：</p>
+<pre><code>impl Future for WaitForIt {
+    type Item = String;
+    type Error = Box&lt;Error&gt;;
+
+    fn poll(&amp;mut self) -&gt; Poll&lt;Self::Item, Self::Error&gt; {
+        let now = Utc::now();
+        if self.until &lt; now {
+            Ok(Async::Ready(
+                format!(&quot;{} after {} polls!&quot;, self.message, self.polls),
+            ))
+        } else {
+            self.polls += 1;
+
+            println!(&quot;not ready yet --&gt; {:?}&quot;, self);
+            Ok(Async::NotReady)
+        }
+    }
+}
+</code></pre>
+<p>为了让这段代码运行起来我们还需要：</p>
+<pre><code>extern crate chrono;
+extern crate futures;
+
+extern crate tokio_core;
+
+use futures::done;
+use futures::prelude::*;
+use futures::future::{err, ok};
+use tokio_core::reactor::Core;
+use std::error::Error;
+use futures::prelude::*;
+use futures::*;
+use chrono::prelude::*;
+use chrono::*;
+
+fn main() {
+    let mut reactor = Core::new().unwrap();
+
+    let wfi_1 = WaitForIt::new(&quot;I'm done:&quot;.to_owned(), Duration::seconds(1));
+    println!(&quot;wfi_1 == {:?}&quot;, wfi_1);
+
+    let ret = reactor.run(wfi_1).unwrap();
+    println!(&quot;ret == {:?}&quot;, ret);
+}
+</code></pre>
+<p>运行!! 等待一秒我们将会看到结果：</p>
+<pre><code>Running `target/debug/tst_fut_create`
+wfi_1 == WaitForIt { message: &quot;I\'m done:&quot;, until: 2017-11-07T16:07:06.382232234Z, polls: 0 }
+not ready yet --&gt; WaitForIt { message: &quot;I\'m done:&quot;, until: 2017-11-07T16:07:06.382232234Z, polls: 1 }
+</code></pre>
+<p>emmm~, 只运行一次就被卡住了, 但是没有额外的消耗<code>CPU</code>.但是为什么会这样？</p>
+<blockquote>
+<p>如果不明确告诉<code>Reactor</code>， <code>Reactor</code>是不会再次轮询停放(park)给它的<code>Future</code>.</p>
+</blockquote>
+<p>(- 译注： Park: 翻译成停放其实也挺好的，就像车场的停车位一样.)</p>
+<p>在我们的例子里， <code>Reactor</code>会立即执行我们停放的<code>Future</code>方法， 当我们返回<code>Async::NotReady</code>, 它就会认为当前停放的<code>Future</code>还未完成。如果我们不主动去解除停放，<code>Reactor</code>永远也不会再次调用。</p>
+<p>空闲中的<code>Reactor</code>是不会消耗CPU的。这样看起来<code>Reactor</code>效率还是很高的。<br>
+在我们的电子邮件示例中，我们可以避免手动检查邮件并等待通知。 所以我们可以在此期间自由玩Doom。(emm～看来作者很喜欢这款游戏).</p>
+<p>另一个更有意义的示例可能是从网络接收数据。 我们可以阻止我们的线程等待网络数据包，或者我们等待时可以做其他事情。 您可能想知道为什么这种方法比使用OS线程更好？</p>
+<h2 id="unparking">Unparking</h2>
+<p>我们该如何纠正我们例子？我们需要以某种方式取消我们的<code>Future</code>。 理想情况下，我们应该有一些外部事件来取消我们的<code>Future</code>（例如按键或网络数据包),但是对于我们的示例，我们将使用这个简单的行手动取消停放</p>
+<pre><code>futures::task::current().notify();
+</code></pre>
+<p>像这样:</p>
+<pre><code>impl Future for WaitForIt {
+    type Item = String;
+    type Error = Box&lt;Error&gt;;
+
+    fn poll(&amp;mut self) -&gt; Poll&lt;Self::Item, Self::Error&gt; {
+        let now = Utc::now();
+        if self.until &lt; now {
+            Ok(Async::Ready(
+                format!(&quot;{} after {} polls!&quot;, self.message, self.polls),
+            ))
+        } else {
+            self.polls += 1;
+
+            println!(&quot;not ready yet --&gt; {:?}&quot;, self);
+            futures::task::current().notify();
+            Ok(Async::NotReady)
+        }
+    }
+}
+</code></pre>
+<p>现在代码完成了。 请注意，在我的情况下，该函数已被调用超过50k次， CPU占用也很高！<br>
+这是严重的浪费，也清楚地说明你为什么需要在某个合理的时间点去<code>Unpark Future</code>.( That's a waste of resources and clearly demonstrates why you should unpark your future only when something happened. )</p>
+<p>另请注意循环如何仅消耗单个线程。 这是设计和效率的来源之一。 当然，如果需要，您可以使用更多线程。</p>
+<h2 id="joining">Joining</h2>
+<p><code>Reactor</code>可以同时运行多个<code>Future</code>，这也是他为什么如此有效率的原因. 那么我们该如何充分利用单线程: 当一个<code>Future</code>被停放的时候, 另一个可以继续工作。</p>
+<p>对于这个例子，我们将重用我们的WaitForIt结构。 我们只是同时调用两次。 我们开始创建两个<code>Future</code>的实例：</p>
+<pre><code>let wfi_1 = WaitForIt::new(&quot;I'm done:&quot;.to_owned(), Duration::seconds(1));
+println!(&quot;wfi_1 == {:?}&quot;, wfi_1);
+let wfi_2 = WaitForIt::new(&quot;I'm done too:&quot;.to_owned(), Duration::seconds(1));
+println!(&quot;wfi_2 == {:?}&quot;, wfi_2);
+</code></pre>
+<p>现在我们来调用<code>futures::future::join_all</code>， 他需要一个<code>vec![]</code>迭代器， 并且返回枚举过的<code>Future</code></p>
+<pre><code>let v = vec![wfi_1, wfi_2];
+let sel = join_all(v);
+</code></pre>
+<p>我们重新实现的代码像这样:</p>
+<pre><code>fn main() {
+    let mut reactor = Core::new().unwrap();
+
+    let wfi_1 = WaitForIt::new(&quot;I'm done:&quot;.to_owned(), Duration::seconds(1));
+    println!(&quot;wfi_1 == {:?}&quot;, wfi_1);
+    let wfi_2 = WaitForIt::new(&quot;I'm done too:&quot;.to_owned(), Duration::seconds(1));
+    println!(&quot;wfi_2 == {:?}&quot;, wfi_2);
+
+    let v = vec![wfi_1, wfi_2];
+
+    let sel = join_all(v);
+
+    let ret = reactor.run(sel).unwrap();
+    println!(&quot;ret == {:?}&quot;, ret);
+}
+</code></pre>
+<p>这里的关键点是两个请求是交错的：第一个<code>Future</code>被调用，然后是第二个，然后是第一个，依此类推，直到两个完成。 如上图所示，第一个<code>Future</code>在第二个之前完成。 第二个在完成之前被调用两次。</p>
+<h2 id="select">Select</h2>
+<p><code>Future</code>的特性还有很多功能。 这里值得探讨的另一件事是select函数。 select函数运行两个（或者在select_all的情况下更多）<code>Future</code>，并返回第一个完成。 这对于实现超时很有用。 我们的例子可以简单：</p>
+<pre><code>fn main() {
+    let mut reactor = Core::new().unwrap();
+
+    let wfi_1 = WaitForIt::new(&quot;I'm done:&quot;.to_owned(), Duration::seconds(1));
+    println!(&quot;wfi_1 == {:?}&quot;, wfi_1);
+    let wfi_2 = WaitForIt::new(&quot;I'm done too:&quot;.to_owned(), Duration::seconds(2));
+    println!(&quot;wfi_2 == {:?}&quot;, wfi_2);
+
+    let v = vec![wfi_1, wfi_2];
+
+    let sel = select_all(v);
+
+    let ret = reactor.run(sel).unwrap();
+    println!(&quot;ret == {:?}&quot;, ret);
+}
+</code></pre>
+<h2 id="closing-remarks">Closing remarks</h2>
+<p>下篇将会创建一个更<code>Real</code>的<code>Future</code>.</p>
+<h2 id="可运行的代码">可运行的代码</h2>
+<pre><code>extern crate chrono;
+extern crate futures;
+
+extern crate tokio_core;
+
+use futures::done;
+use futures::prelude::*;
+use futures::future::{err, ok};
+use tokio_core::reactor::Core;
+use std::error::Error;
+use futures::prelude::*;
+use futures::*;
+use chrono::prelude::*;
+use chrono::*;
+use futures::future::join_all;
+#[derive(Debug)]
+struct WaitForIt {
+    message: String,
+    until: DateTime&lt;Utc&gt;,
+    polls: u64,
+}
+
+impl WaitForIt {
+    pub fn new(message: String, delay: Duration) -&gt; WaitForIt {
+        WaitForIt {
+            polls: 0,
+            message: message,
+            until: Utc::now() + delay,
+        }
+    }
+}
+
+impl Future for WaitForIt {
+    type Item = String;
+    type Error = Box&lt;Error&gt;;
+
+    fn poll(&amp;mut self) -&gt; Poll&lt;Self::Item, Self::Error&gt; {
+        let now = Utc::now();
+        if self.until &lt; now {
+            Ok(Async::Ready(
+                format!(&quot;{} after {} polls!&quot;, self.message, self.polls),
+            ))
+        } else {
+            self.polls += 1;
+
+            println!(&quot;not ready yet --&gt; {:?}&quot;, self);
+            futures::task::current().notify();
+            Ok(Async::NotReady)
+        }
+    }
+}
+
+fn main() {
+    let mut reactor = Core::new().unwrap();
+
+    let wfi_1 = WaitForIt::new(&quot;I'm done:&quot;.to_owned(), Duration::seconds(1));
+    println!(&quot;wfi_1 == {:?}&quot;, wfi_1);
+    let wfi_2 = WaitForIt::new(&quot;I'm done too:&quot;.to_owned(), Duration::seconds(1));
+    println!(&quot;wfi_2 == {:?}&quot;, wfi_2);
+
+    let v = vec![wfi_1, wfi_2];
+
+    let sel = join_all(v);
+
+    let ret = reactor.run(sel).unwrap();
+    println!(&quot;ret == {:?}&quot;, ret);
+}
+
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#intro">Intro</a>
+<ul>
+<li><a href="#reactor-loop">Reactor? Loop?</a></li>
+<li><a href="#a-future-from-scratch">A future from scratch</a></li>
+<li><a href="#unparking">Unparking</a></li>
+<li><a href="#joining">Joining</a></li>
+<li><a href="#select">Select</a></li>
+<li><a href="#closing-remarks">Closing remarks</a></li>
+<li><a href="#%E5%8F%AF%E8%BF%90%E8%A1%8C%E7%9A%84%E4%BB%A3%E7%A0%81">可运行的代码</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="http://localhost:4000/post/shen-ru-qian-chu-rust-future-part-2">
+              <h3 class="post-title">
+                深入浅出Rust Future - Part 2
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="http://localhost:4000/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

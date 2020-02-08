@@ -1,0 +1,209 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title> K8S FOR IOT的大胆猜想 | Gridea</title>
+<link rel="shortcut icon" href="http://localhost:4000/favicon.ico?v=1581187173473">
+<link href="https://cdn.remixicon.com/releases/v2.1.0/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="http://localhost:4000/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title=" K8S FOR IOT的大胆猜想 | Gridea - Atom Feed" href="http://localhost:4000/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="前言
+全都是梦话
+为何需要K8S
+最近一直在思考物联网下C端设备HA问题，传统物联网IOT设备存在以下几个痛点：
+
+固件版本更新困难
+部署过程复杂
+假如固件有问题，往往需要运维人员到现场取回板子，维修时间长，维护过程复杂
+固件基本没有自愈能..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="http://localhost:4000">
+  <img class="avatar" src="http://localhost:4000/images/avatar.png?v=1581187173473" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="http://localhost:4000/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="http://localhost:4000/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+               K8S FOR IOT的大胆猜想
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-02-09
+              </span>
+              <span>
+                2 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="前言">前言</h1>
+<p>全都是梦话</p>
+<h1 id="为何需要k8s">为何需要K8S</h1>
+<p>最近一直在思考物联网下C端设备HA问题，传统物联网IOT设备存在以下几个痛点：</p>
+<ul>
+<li>固件版本更新困难</li>
+<li>部署过程复杂</li>
+<li>假如固件有问题，往往需要运维人员到现场取回板子，维修时间长，维护过程复杂</li>
+<li>固件基本没有自愈能力</li>
+<li>无法合理利用IOT板子的有限的资源</li>
+<li>....</li>
+</ul>
+<!-- more -->
+<p>上述问题，仅仅是我现在能想到的，传统物联网下想要解决这些问题，公司可能会花很多的精力和财力，才能逐渐完善。<br>
+其实每个IOT设备都是一个Micro PC，现在的IOT设备，硬件配置已经很好了，而且OS也很稳定。<br>
+现在将我们的思想转变下:</p>
+<ul>
+<li>我们在做传统的Server Side Application(以下简称SSA)是怎么升级的？</li>
+<li>我们在做传统的SSA怎么保证HA，升级0宕机的？</li>
+<li>我们在做传统的SSA怎么保证合理利用服务器资源？</li>
+<li>我们在做传统的SSA怎么保证快速扩容，快速部署？</li>
+</ul>
+<p>借鉴下当下比较火热的几个概念或者技术:</p>
+<ul>
+<li>滚动升级(解决升级宕机问题)</li>
+<li>LXC, runsc, gvisor(资源隔离，合理利用)</li>
+<li>容器(快速部署，扩容)</li>
+</ul>
+<p>是不是联想到了容器和容器编排技术(物联网设备往往是成百上千的)？</p>
+<h1 id="架构是怎么样的">架构是怎么样的？</h1>
+<p>每个IOT都是一个Node Server，这样就可以轻松的使用k8s的各种特性。集群部署，高可用，滚动升级，自愈机制。</p>
+<h1 id="弊端痛点">弊端痛点</h1>
+<ul>
+<li>IOT板子网络稳定性要求较高(如果不稳定会引起k8s调度问题，但不影响本地程序的运行)</li>
+<li>升级更新镜像，可能需要大量的服务器带宽(如果通过k8s namespace对指定命名空间进行升级就不会出现问题)</li>
+<li>网络固定IP(可以通过内网穿透做)</li>
+</ul>
+<h1 id="结尾">结尾</h1>
+<p>已经在Raspberry PI3实现了一个最小化的k8s集群，路还很漫长，慢慢来</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E5%89%8D%E8%A8%80">前言</a></li>
+<li><a href="#%E4%B8%BA%E4%BD%95%E9%9C%80%E8%A6%81k8s">为何需要K8S</a></li>
+<li><a href="#%E6%9E%B6%E6%9E%84%E6%98%AF%E6%80%8E%E4%B9%88%E6%A0%B7%E7%9A%84">架构是怎么样的？</a></li>
+<li><a href="#%E5%BC%8A%E7%AB%AF%E7%97%9B%E7%82%B9">弊端痛点</a></li>
+<li><a href="#%E7%BB%93%E5%B0%BE">结尾</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+  <a class="rss" href="http://localhost:4000/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
