@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://www.rustc.io</id>
     <title>HelloWorld</title>
-    <updated>2020-02-11T15:21:49.636Z</updated>
+    <updated>2020-02-11T15:23:34.415Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://www.rustc.io"/>
     <link rel="self" href="https://www.rustc.io/atom.xml"/>
@@ -17,7 +17,9 @@
         </link>
         <updated>2020-02-11T15:16:50.000Z</updated>
         <content type="html"><![CDATA[<h1 id="二月-三月">二月-三月</h1>
-<p><a href="https://www.bilibili.com/video/av48922578?from=search&amp;seid=1375370299303546615">【计算科学】计算科学与编程导论-麻省理工</a></p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox" id="task-item-8577420"> <a href="https://www.bilibili.com/video/av48922578?from=search&amp;seid=1375370299303546615">【计算科学】计算科学与编程导论-麻省理工<label class="task-list-item-label" for="task-item-8577420"> [【计算科学】计算科学与编程导论-麻省理工](https://www.bilibili.com/video/av48922578?from=search&seid=1375370299303546615)</label></li>
+</ul>
 ]]></content>
     </entry>
     <entry>
