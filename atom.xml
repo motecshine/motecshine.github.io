@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://www.rustc.io</id>
     <title>HelloWorld</title>
-    <updated>2020-02-12T14:28:12.857Z</updated>
+    <updated>2020-02-21T13:54:17.562Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://www.rustc.io"/>
     <link rel="self" href="https://www.rustc.io/atom.xml"/>
@@ -11,14 +11,56 @@
     <icon>https://www.rustc.io/favicon.ico</icon>
     <rights>All rights reserved 2020, HelloWorld</rights>
     <entry>
-        <title type="html"><![CDATA[2020 FLAG]]></title>
+        <title type="html"><![CDATA[关于未来职业一些思考]]></title>
         <id>https://www.rustc.io/post/2020-flag</id>
         <link href="https://www.rustc.io/post/2020-flag">
         </link>
         <updated>2020-02-11T15:16:50.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="二月-三月">二月-三月</h1>
-<ul class="contains-task-list">
-<li class="task-list-item"><input class="task-list-item-checkbox" disabled="" type="checkbox" id="task-item-753444"> <a href="https://www.bilibili.com/video/av48922578?from=search&amp;seid=1375370299303546615">【计算科学】计算科学与编程导论-麻省理工<label class="task-list-item-label" for="task-item-753444"> [【计算科学】计算科学与编程导论-麻省理工](https://www.bilibili.com/video/av48922578?from=search&seid=1375370299303546615)</label></li>
+        <content type="html"><![CDATA[<h1 id="intro">Intro</h1>
+<p>总感觉自己最近很混乱，在也没有17-18年那种冲劲了，迷茫，无助，于是想理一理，自己的问题。</p>
+<h2 id="职场">职场</h2>
+<p>2019年8月份从一个物联网公司离职，这家应该是我呆的最久的一家公司了，2年2个月，出来的原因也很简单，就是工资高了很多， 新的工作不是研发向的，整天CURD，久了就烦了，但是时间还是较为充裕没有996。在此期间总想做点事情，于是雨露均沾，到头来什么都没做好，这样做的后果就是什么成果都没有，也就没有了成就感，成就感对于我来说太重要了，没了它也就没了我。 我把我想要的总结下当作一个备忘录。</p>
+<h3 id="1-学历">1. 学历</h3>
+<p>无论是内推也好还是投递也好，总给别人说自己是高中毕业，起初没觉的什么，从去年开始找工做开始四处碰壁，学历是硬伤，我准备5年(32岁)左右拿到在职研究生的学历，这个长期的计划已经在去年6月份开始实施了。</p>
+<h2 id="技术栈">技术栈</h2>
+<p>工作这几年每家公司的技术栈都不一样，太杂了，我想了想应该需要在下面方向选择：</p>
+<ul>
+<li>
+<p>基础技术栈</p>
+<ul>
+<li>计算机组成</li>
+<li>操作系统</li>
+<li>编译</li>
+</ul>
+</li>
+<li>
+<p>职业选择方向</p>
+<ul>
+<li>
+<p>Cloud Native</p>
+<blockquote>
+<p>这是自己现在正在做的方向， 主要是： Kubernetes Docker  Mesh</p>
+</blockquote>
+</li>
+<li>
+<p>IOT Edge</p>
+<blockquote>
+<p>自己一直对这个方向很感兴趣，但是无奈没有机会。</p>
+</blockquote>
+</li>
+<li>
+<p>Distributed Database</p>
+</li>
+</ul>
+<blockquote>
+<p>有意思而且TiDB Plan 有完整的学习路线。</p>
+</blockquote>
+<h2 id="短期内的打算">短期内的打算</h2>
+<ul>
+<li>计算机组成</li>
+<li>MIT 6.8.24</li>
+</ul>
+</li>
 </ul>
 ]]></content>
     </entry>
