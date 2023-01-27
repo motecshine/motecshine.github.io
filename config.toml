@@ -1,0 +1,14 @@
+baseURL = 'https://rustc.io/'
+languageCode = 'zh-cn'
+title = '窝'
+theme = "yinyang"
+
+[params]
+headTitle = "你好啊"
+mainSections = ["posts"]
+
+[[params.socials]]
+name = "About Me"
+link = "https://rustc.io"
+
+
