@@ -890,11 +890,15 @@ of its elements.
 This may seem like a digression from the topic of using operators with
 parameterized types, but we'll get there in the end.
 
+尽管我们主要对定义约束的类型集感兴趣，但最直接的方法是定义所有类型的类型集。然后，一个约束的类型集是由其元素的类型集构造出来的。这似乎是对使用具有参数化类型的操作符这一主题的偏离，但我们最后会达到这个目的。
+
 Every type has an associated type set.
 The type set of a non-interface type `T` is simply the set `{T}`: a
 set that contains just `T` itself.
 The type set of an ordinary interface type is the set of all types
 that declare all the methods of the interface.
+
+每个类型都有一个相关的类型集。一个非接口类型T的类型集只是`{T}`的集合：一个只包含`T`本身的集合。一个普通接口类型的类型集是所有声明了该接口所有方法的类型的集合。
 
 Note that the type set of an ordinary interface type is an infinite
 set.
@@ -907,6 +911,8 @@ inherently declares all of its own methods.
 The type set of the empty interface `interface{}` is the set of all
 possible types.
 
+请注意，一个普通接口类型的类型集是一个无限的集合。对于任何给定的类型`T`和`inteface type IT`，很容易知道T是否在`IT`的类型集中（通过检查`IT`的所有方法是否由`T`声明），但是没有合理的方法来列举`IT`类型集中的所有类型。`IT`的类型是它自己的类型集的成员，因为一个接口本来就声明了它自己的所有方法。空接口`interface{}`的类型集是所有可能类型的集合。
+
 It will be useful to construct the type set of an interface type by
 looking at the elements of the interface.
 This will produce the same result in a different way.
@@ -916,6 +922,16 @@ Although a method signature is not a type, it's convenient to define a
 type set for it: the set of all types that declare that method.
 The type set of an embedded interface type `E` is simply that of `E`:
 the set of all types that declare all the methods of `E`.
+
+通过查看接口的元素来构造接口类型的类型集将很有用。
+
+这将以不同的方式产生相同的结果。
+
+接口的元素可以是方法签名或嵌入式接口类型。
+
+虽然方法签名不是类型，但为它定义一个类型集很方便：声明该方法的所有类型的集合。
+
+嵌入式接口类型 `E` 的类型集就是 `E` 的类型集：声明 `E` 的所有方法的所有类型的集合。
 
 For any method signature `M`, the type set of `interface{ M }` is
 the type of `M`: the set of all types that declare `M`.
@@ -928,6 +944,14 @@ with a method `M1`, and similarly for `M2`.
 If we take the intersection of those two type sets, the result is the
 set of all types that declare both `M1` and `M2`.
 That is exactly the type set of `interface{ M1; M2 }`.
+
+对于任何方法签名`M`，`interface{ M }`的类型集是M的类型：声明M的所有类型的集合。
+
+对于任何方法签名`M1`和`M2`，`interface{ M1; M2 }`的类型集是同时声明`M1`和`M2`的所有类型的集合。这就是`M1`的类型集和`M2`的类型集的交集。
+
+要看到这一点，请注意，`M1`的类型集是所有具有`M1`方法的类型的集合，同样，`M2`也是如此。
+
+如果我们取这两个***类型集的交集***，结果就是同时声明`M1`和`M2`的所有类型的集合。这正是i`nterface{ M1; M2 }`的类型集。
 
 The same applies to embedded interface types.
 For any two interface types `E1` and `E2`, the type set of `interface{
