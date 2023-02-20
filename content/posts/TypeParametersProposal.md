@@ -5,9 +5,6 @@ draft: false
 tags: ["translate", "Golang", "Generics", "Proposal"]
 ---
 
-
-
-
 ## Status
 
 This is the design for adding generic programming using type
@@ -193,7 +190,7 @@ _type arguments_.
 
 当运行泛型代码时，类型参数被类型实体参数所取代。
 
-```
+```go
 Print[T any](s []T)  // T is Parameters
 Print[int]([]int{1, 2, 3}) // int is arguments
 ```
@@ -206,7 +203,7 @@ order to support generic programming.
 
 这是一个打印出切片的每个元素的函数，其中切片的元素类型 `T` , 然而它是未知的类型。
 这是我们为了支持泛型编程而希望允许的那种函数的一个简单示例。（稍后我们将会讨论 [generic types](#Generic-types)）
-```
+```go
 // Print prints the elements of a slice.
 // It should be possible to call this with any slice value.
 func Print(s []T) { // Just an example, not the suggested syntax.
@@ -252,7 +249,7 @@ permitted.
 
 我们将在后面讨论约束条件的细节；现在，我们只需注意任何是一个有效的约束条件，意味着任何类型都是允许的。
 
-```
+```go
 // Print prints the elements of any slice.
 // Print has a type parameter T and has a single (non-type)
 // parameter s which is a slice of that type parameter.
@@ -296,7 +293,7 @@ square brackets.
 
 与类型参数列表一样，类型参数列表使用方括号。
 
-```
+```go
 	// Call Print with a []int.
 	// Print has a type parameter T, and we want to pass a []int,
 	// so we pass a type argument of int by writing Print[int].
@@ -317,7 +314,7 @@ Let's turn it into a function that converts a slice of any type into a
 
 我们的例子稍微复杂一点，把它变成一个函数，通过在每个元素上调用 `String` 方法将任何类型的切片转换为 `[]string`。
 
-```
+```go
 // This function is INVALID.
 func Stringify[T any](s []T) (ret []string) {
 	for _, v := range s {
@@ -493,7 +490,7 @@ For the `Stringify` example, we need an interface type with a `String`
 method that takes no arguments and returns a value of type `string`.
 对于Stringify的例子，我们需要一个具有String方法的接口类型，该方法不需要参数，并返回一个字符串类型的值。
 
-```
+```go
 // Stringer is a type constraint that requires the type argument to have
 // a String method and permits the generic function to call String.
 // The String method should return a string representation of the value.
@@ -506,7 +503,7 @@ type Stringer interface {
 interface as the standard library's `fmt.Stringer` type, and  real
 code would likely simply use `fmt.Stringer`.)
 
-(这对这次讨论并不重要，但这定义了与标准库的fmt.Stringer类型相同的接口，真正的代码可能会简单地使用fmt.Stringer。)
+(这对这次讨论并不重要，但这定义了与标准库的`fmt.Stringer`类型相同的接口，真正的代码可能会简单地使用`fmt.Stringer`。)
 
 
 ### The `any` constraint
@@ -519,7 +516,9 @@ for any type.
 The interface type for that is the empty interface: `interface{}`.
 So we could write the `Print` example as
 
-```
+现在我们知道约束只是接口类型，我们可以解释什么是约束。如上所示，`any` 约束允许任何类型作为类型参数，并且只允许函数使用任何类型允许的操作。其接口类型是空接口：`interface{}`。所以我们可以将 `Print` 示例写成：
+
+```go
 // Print prints the elements of any slice.
 // Print has a type parameter T and has a single (non-type)
 // parameter s which is a slice of that type parameter.
@@ -538,6 +537,11 @@ block.
 It will not be valid to use `any` as anything other than a type
 constraint.
 
+但是，每次编写不对其类型参数施加约束的泛型函数时都必须编写 `interface{}` 是很乏味的。
+所以在这个设计中我们建议一个类型约束 `any` 等同于 `interface{}`。
+这将是 `Go` 语言中的一个预先内置的隐式声明， 全局有效。
+另外将 `any` 用作类型约束以外的任何内容都是无效的。
+
 (Note: clearly we could make `any` generally available as an alias for
 `interface{}`, or as a new defined type defined as `interface{}`.
 However, we don't want this design, which is about generics, to lead
@@ -545,6 +549,420 @@ to a possibly significant change to non-generic code.
 Adding `any` as a general purpose name for `interface{}` can and
 should be [discussed separately](https://golang.org/issue/33232)).
 
+（注意：我们可以使任何代码中的变量 作为 `interface{}` 的别名，或作为定义为 `interface{}` 的新定义类型。但是，我们不希望这种关于泛型的设计可能导致对非通用代码的重大更改。将 `any` 添加为 `interface{}` 的通用名称可以而且应该[单独讨论](https://golang.org/issue/33232)）。
+
+
+### Using a constraint
+
+For a generic function, a constraint can be thought of as the type of
+the type argument: a meta-type.
+As shown above, constraints appear in the type parameter list as the
+meta-type of a type parameter.
+
+对于一个泛型函数，约束可以被认为是类型参数的类型：`a meta-type`。
+
+如上所示，约束在类型参数列表中作为类型参数的`meta-type`出现。
+
+```go
+// Stringify calls the String method on each element of s,
+// and returns the results.
+func Stringify[T Stringer](s []T) (ret []string) {
+	for _, v := range s {
+		ret = append(ret, v.String())
+	}
+	return ret
+}
+```
+
+The single type parameter `T` is followed by the constraint that
+applies to `T`, in this case `Stringer`.
+
+单一类型参数 `T` 后跟适用于 `T` 的约束，在本例中为 `Stringer`。
+
+### Multiple type parameters
+
+Although the `Stringify` example uses only a single type parameter,
+functions may have multiple type parameters.
+
+尽管 `Stringify` 示例仅使用单个类型参数，但函数可能具有多个类型参数。
+
+```
+// Print2 has two type parameters and two non-type parameters.
+func Print2[T1, T2 any](s1 []T1, s2 []T2) { ... }
+```
+
+对比下面的代码
+
+```go
+// Print2Same has one type parameter and two non-type parameters.
+func Print2Same[T any](s1 []T, s2 []T) { ... }
+```
+
+In `Print2` `s1` and `s2` may be slices of different types.
+In `Print2Same` `s1` and `s2` must be slices of the same element
+type.
+
+在 `Print2` 中，`s1` 和 `s2` 可能是不同类型的切片。
+在 `Print2Same` 中，`s1` 和 `s2` 必须是相同元素类型的切片。
+
+
+Just as each ordinary parameter may have its own type, each type
+parameter may have its own constraint.
+
+就像每个普通参数可以有自己的类型一样，每个类型参数也可以有自己的约束条件。
+
+```go
+// Stringer is a type constraint that requires a String method.
+// The String method should return a string representation of the value.
+type Stringer interface {
+	String() string
+}
+
+// Plusser is a type constraint that requires a Plus method.
+// The Plus method is expected to add the argument to an internal
+// string and return the result.
+type Plusser interface {
+	Plus(string) string
+}
+
+// ConcatTo takes a slice of elements with a String method and a slice
+// of elements with a Plus method. The slices should have the same
+// number of elements. This will convert each element of s to a string,
+// pass it to the Plus method of the corresponding element of p,
+// and return a slice of the resulting strings.
+func ConcatTo[S Stringer, P Plusser](s []S, p []P) []string {
+	r := make([]string, len(s))
+	for i, v := range s {
+		r[i] = p[i].Plus(v.String())
+	}
+	return r
+}
+```
+
+A single constraint can be used for multiple type parameters, just as
+a single type can be used for multiple non-type function parameters.
+The constraint applies to each type parameter separately.
+
+单个约束可用于多个类型参数，就像单个类型可用于多个非类型函数参数一样。该约束分别应用于每个类型参数。
+
+```go
+// Stringify2 converts two slices of different types to strings,
+// and returns the concatenation of all the strings.
+func Stringify2[T1, T2 Stringer](s1 []T1, s2 []T2) string {
+	r := ""
+	for _, v1 := range s1 {
+		r += v1.String()
+	}
+	for _, v2 := range s2 {
+		r += v2.String()
+	}
+	return r
+}
+```
+
+### Generic types
+
+We want more than just generic functions: we also want generic types.
+We suggest that types be extended to take type parameters.
+
+我们想要的不仅仅是泛型函数：我们还想要泛型类型。
+
+```go
+// Vector is a name for a slice of any element type.
+type Vector[T any] []T
+```
+
+A type's type parameters are just like a function's type parameters.
+
+一个类型的类型参数就像一个函数的类型参数一样。
+
+Within the type definition, the type parameters may be used like any
+other type.
+
+在类型定义中，类型参数可以像其他类型一样使用。
+
+To use a generic type, you must supply type arguments.
+This is called _instantiation_.
+The type arguments appear in square brackets, as usual.
+When we instantiate a type by supplying type arguments for the type
+parameters, we produce a type in which each use of a type parameter in
+the type definition is replaced by the corresponding type argument.
+
+要使用泛型类型，您必须提供类型参数。
+这称为 `_instantiation_`。
+像往常一样，类型参数出现在方括号中。
+当我们通过为类型参数提供类型参数来实例化一个类型时，我们生成了一个类型，其中类型定义中的每个类型参数的使用都被相应的类型参数替换。
+
+```go
+// v is a Vector of int values.
+//
+// This is similar to pretending that "Vector[int]" is a valid identifier,
+// and writing
+//   type "Vector[int]" []int
+//   var v "Vector[int]"
+// All uses of Vector[int] will refer to the same "Vector[int]" type.
+//
+var v Vector[int]
+```
+
+Generic types can have methods.
+The receiver type of a method must declare the same number of type
+parameters as are declared in the receiver type's definition.
+They are declared without any constraint.
+
+泛型的类型可以有方法。方法的`receiver`类型必须声明与`receiver`类型定义中声明的相同数量的类型参数。它们的声明没有任何限制。
+
+```go
+// Push adds a value to the end of a vector.
+func (v *Vector[T]) Push(x T) { *v = append(*v, x) }
+```
+
+The type parameters listed in a method declaration need not have the
+same names as the type parameters in the type declaration.
+In particular, if they are not used by the method, they can be `_`.
+
+方法声明中列出的类型参数不必与类型声明中的类型参数同名。特别是，如果它们不被方法使用，它们可以是`_`。
+
+A generic type can refer to itself in cases where a type can
+ordinarily refer to itself, but when it does so the type arguments
+must be the type parameters, listed in the same order.
+This restriction prevents infinite recursion of type instantiation.
+
+在类型通常可以引用自身的情况下，泛型类型可以引用自身，但是当它这样做时，`type arguments`必须是`type parameter`，***以相同的顺序列出***。此限制可防止类型实例化的无限递归。
+
+```go
+// List is a linked list of values of type T.
+type List[T any] struct {
+	next *List[T] // this reference to List[T] is OK
+	val  T
+}
+
+// This type is INVALID.
+type P[T1, T2 any] struct {
+	F *P[T2, T1] // INVALID; must be [T1, T2] (0.0) 注意这里
+}
+```
+
+This restriction applies to both direct and indirect references.
+
+此限制适用于直接和间接引用。
+
+```go
+// ListHead is the head of a linked list.
+type ListHead[T any] struct {
+	head *ListElement[T]
+}
+
+// ListElement is an element in a linked list with a head.
+// Each element points back to the head.
+type ListElement[T any] struct {
+	next *ListElement[T]
+	val  T
+	// Using ListHead[T] here is OK.
+	// ListHead[T] refers to ListElement[T] refers to ListHead[T].
+	// Using ListHead[int] would not be OK, as ListHead[T]
+	// would have an indirect reference to ListHead[int].
+	head *ListHead[T]
+}
+```
+
+(Note: with more understanding of how people want to write code, it
+may be possible to relax this rule to permit some cases that use
+different type arguments.)
+(注意：随着社区的深入讨论，我们对`Gopher`写代码的方式有了更多的了解，也许可以放宽这个规则，允许一些使用不同类型参数的情况)。
+
+The type parameter of a generic type may have constraints other than
+`any`.
+
+泛型类型的类型参数可能具有除任何约束之外的约束。
+
+```go
+// StringableVector is a slice of some type, where the type
+// must have a String method.
+type StringableVector[T Stringer] []T
+
+func (s StringableVector[T]) String() string {
+	var sb strings.Builder
+	for i, v := range s {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		// It's OK to call v.String here because v is of type T
+		// and T's constraint is Stringer.
+		sb.WriteString(v.String())
+	}
+	return sb.String()
+}
+```
+
+### Methods may not take additional type arguments
+
+Although methods of a generic type may use the type's parameters,
+methods may not themselves have additional type parameters.
+Where it would be useful to add type arguments to a method, people
+will have to write a suitably parameterized top-level function.
+
+There is more discussion of this in [the issues
+section](#No-parameterized-methods).
+
+虽然泛型类型的方法可以使用类型的参数，但方法本身可能没有额外的类型参数。在向方法添加类型参数有用的地方，人们将不得不编写一个适当参数化的顶级函数。
+在[the issues
+section](#No-parameterized-methods)对此有更多讨论。
+
+### Operators
+
+As we've seen, we are using interface types as constraints.
+Interface types provide a set of methods, and nothing else.
+This means that with what we've seen so far, the only thing that
+generic functions can do with values of type parameters, other than
+operations that are permitted for any type, is call methods.
+
+正如我们所见，我们使用接口类型作为约束。接口类型提供一组方法，仅此而已。
+这意味着，就我们目前所见，泛型函数唯一可以对类型参数值执行的操作是调用方法，而不是允许对任何类型执行的操作。
+
+However, method calls are not sufficient for everything we want to
+express.
+Consider this simple function that returns the smallest element of a
+slice of values, where the slice is assumed to be non-empty.
+
+然而，对于我们想要表达的一切，方法调用是不够的。考虑这个简单的函数，它返回值切片的最小元素，其中切片被假定为非空。
+
+```go
+// This function is INVALID.
+func Smallest[T any](s []T) T {
+	r := s[0] // panic if slice is empty
+	for _, v := range s[1:] {
+		if v < r { // INVALID
+			r = v
+		}
+	}
+	return r
+}
+```
+
+Any reasonable generics implementation should let you write this
+function.
+The problem is the expression `v < r`.
+This assumes that `T` supports the `<` operator, but the constraint on
+`T` is simply `any`.
+With the `any` constraint the function `Smallest` can only use
+operations that are available for all types, but not all Go types
+support `<`.
+Unfortunately, since `<` is not a method, there is no obvious way to
+write a constraint&mdash;an interface type&mdash;that permits `<`.
+
+任何合理的泛型实现都应该让您编写此函数。问题是表达式 `v < r`。
+这假定 `T `支持 `<` 运算符，但对 T 的约束只是`any`。在 `any` 约束下，函数 `Smallest` 只能使用适用于所有类型的操作，但并非所有 `Go` 类型都支持 `<`。
+不幸的是，由于 `<` 不是方法，因此没有明显的方法来编写允许 `<` 的约束（接口类型）。
+
+We need a way to write a constraint that accepts only types that
+support `<`.
+In order to do that, we observe that, aside from two exceptions that
+we will discuss later, all the arithmetic, comparison, and logical
+operators defined by the language may only be used with types that are
+predeclared by the language, or with defined types whose underlying
+type is one of those predeclared types.
+That is, the operator `<` can only be used with a predeclared type
+such as `int` or `float64`, or a defined type whose underlying type is
+one of those types.
+Go does not permit using `<` with a composite type or with an
+arbitrary defined type.
+
+我们需要一种方法来编写一个只接受支持 `<` 的类型的约束。
+为了做到这一点，我们观察到，除了我们稍后将讨论的两个例外，语言定义的所有算术、比较和逻辑运算符只能与语言预先声明的类型或定义的类型一起使用其基础类型是那些预先声明的类型之一。
+也就是说，运算符 `<` 只能与预先声明的类型（例如 `int` 或 `float64`）一起使用，或者与基础类型是这些类型之一的已定义类型一起使用。 `Go` 不允许将 `<` 与复合类型或任意定义的类型一起使用。
+
+This means that rather than try to write a constraint for `<`, we can
+approach this the other way around: instead of saying which operators
+a constraint should support, we can say which types a constraint
+should accept.
+We do this by defining a _type set_ for a constraint.
+
+这意味着与其尝试为 `<` 编写约束，我们还可以反过来处理：我们可以说约束应该接受哪些类型，而不是说约束应该支持哪些运算符。我们通过为约束定义一个`type set`来做到这一点。
+
+#### Type sets
+
+Although we are primarily interested in defining the type set of
+constraints, the most straightforward approach is to define the type
+set of all types.
+The type set of a constraint is then constructed out of the type sets
+of its elements.
+This may seem like a digression from the topic of using operators with
+parameterized types, but we'll get there in the end.
+
+Every type has an associated type set.
+The type set of a non-interface type `T` is simply the set `{T}`: a
+set that contains just `T` itself.
+The type set of an ordinary interface type is the set of all types
+that declare all the methods of the interface.
+
+Note that the type set of an ordinary interface type is an infinite
+set.
+For any given type `T` and interface type `IT` it's easy to tell
+whether `T` is in the type set of `IT` (by checking if all methods of
+`IT` are declared by `T`), but there is no reasonable way to enumerate
+all the types in the type set of `IT`.
+The type `IT` is a member of its own type set, because an interface
+inherently declares all of its own methods.
+The type set of the empty interface `interface{}` is the set of all
+possible types.
+
+It will be useful to construct the type set of an interface type by
+looking at the elements of the interface.
+This will produce the same result in a different way.
+The elements of an interface can be either a method signature or an
+embedded interface type.
+Although a method signature is not a type, it's convenient to define a
+type set for it: the set of all types that declare that method.
+The type set of an embedded interface type `E` is simply that of `E`:
+the set of all types that declare all the methods of `E`.
+
+For any method signature `M`, the type set of `interface{ M }` is
+the type of `M`: the set of all types that declare `M`.
+For any method signatures `M1` and `M2`, the type set of `interface{
+M1; M2 }` is set of all types that declare both `M1` and `M2`.
+This is the intersection of the type set of `M1` and the type set of
+`M2`.
+To see this, observe that the type set of `M1` is the set of all types
+with a method `M1`, and similarly for `M2`.
+If we take the intersection of those two type sets, the result is the
+set of all types that declare both `M1` and `M2`.
+That is exactly the type set of `interface{ M1; M2 }`.
+
+The same applies to embedded interface types.
+For any two interface types `E1` and `E2`, the type set of `interface{
+E1; E2 }` is the intersection of the type sets of `E1` and `E2`.
+
+Therefore, the type set of an interface type is the intersection of
+the type sets of the element of the interface.
+
+#### Type sets of constraints
+
+Now that we have described the type set of an interface type, we will
+redefine what it means to satisfy the constraint.
+Earlier we said that a type argument satisfies a constraint if it
+implements the constraint.
+Now we will say that a type argument satisfies a constraint if it is a
+member of the constraint's type set.
+
+For an ordinary interface type, one whose only elements are method
+signatures and embedded ordinary interface types, the meaning is
+exactly the same: the set of types that implement the interface type
+is exactly the set of types that are in its type set.
+
+We will now proceed to define additional elements that may appear in
+an interface type that is used as a constraint, and define how those
+additional elements can be used to further control the type set of the
+constraint.
+
+#### Constraint elements
+
+The elements of an ordinary interface type are method signatures and
+embedded interface types.
+We propose permitting three additional elements that may be used in an
+interface type used as a constraint.
+If any of these additional elements are used, the interface type may
+not be used as an ordinary type, but may only be used as a constraint.
 
 ## Author
 
