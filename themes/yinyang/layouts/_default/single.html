@@ -3,6 +3,7 @@
 {{ partial "head.html" . }}
 
 <body>
+  
   <article class="post {{ .Site.Language.LanguageName }}" id="article">
     <div class="row">
       <div class="col-xs-12">
@@ -30,12 +31,21 @@
           </div>
           {{ end }}
         </header>
+        <div class="row middle-xs">
+          <div class="col-xs-12">
+            <span> [TOC] </span>
+            <aside>
+              {{ .TableOfContents }}
+            </aside>
+          </div>
+        </div>
 
         <div class="post-content markdown-body">
           {{ .Site.Params.postHeaderContent | safeHTML }}
+         
           {{ .Content }}
         </div>
-
+        
         <div class="row middle-xs">
           <div class="col-xs-12">
             {{ range .Params.tags }}
@@ -72,7 +82,6 @@
       </div>
     </div>
   </article>
-
   {{ partial "scripts.html" . }}
   {{ if .Site.Params.extraBody }}
   {{ .Site.Params.extraBody | safeHTML }}

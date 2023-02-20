@@ -4,8 +4,10 @@ title = '窝'
 theme = "yinyang"
 
 [params]
-headTitle = "你好啊"
+headTitle = "满山猴子我腚最红"
 mainSections = ["posts"]
+toc = true
+tags = true
 
 [[params.socials]]
 name = "About Me"
