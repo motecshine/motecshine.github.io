@@ -191,6 +191,7 @@ _type arguments_.
 当运行泛型代码时，类型参数被类型实体参数所取代。
 
 ```go
+// 原文没有 下面好多 type parameters 与 type arguments 别搞混了 
 Print[T any](s []T)  // T is Parameters
 Print[int]([]int{1, 2, 3}) // int is arguments
 ```
@@ -999,6 +1000,535 @@ If any of these additional elements are used, the interface type may
 not be used as an ordinary type, but may only be used as a constraint.
 
 普通接口类型的元素是方法签名和嵌入式接口类型。我们建议允许在作为约束的接口类型中使用三个额外的元素。如果使用了这些额外的元素，该接口类型就不能作为普通类型使用，而只能作为约束使用。
+
+
+##### Arbitrary type constraint element
+
+The first new element is to simply permit listing any type, not just
+an interface type.
+For example: `type Integer interface{ int }`.
+When a non-interface type `T` is listed as an element of a constraint,
+its type set is simply `{T}`.
+The type set of `int` is `{int}`.
+Since the type set of a constraint is the intersection of the type
+sets of all elements, the type set of `Integer` is also `{int}`.
+This constraint `Integer` can be satisfied by any type that is a
+member of the set `{int}`.
+There is exactly one such type: `int`.
+
+***第一个新元素是简单地允许列出任何类型，而不仅仅是一个接口类型。例如：`type Integer interface{ int }`。当一个非接口类型`T`被列为一个约束的元素时，它的类型集只是`{T}`。`int`的类型集是`{int}`。由于约束的类型集是所有元素的类型集的交集，所以`Integer`的类型集也是`{int}`。这个约束`Integer`可以被任何属于集合`{int}`成员的类型所满足。***
+
+The type may be a type literal that refers to a type parameter (or
+more than one), but it may not be a plain type parameter.
+
+类型可以是指一个类型参数（或不止一个）的类型字面量，但它不可以是一个普通的类型参数。
+
+```go
+// EmbeddedParameter is INVALID.
+type EmbeddedParameter[T any] interface {
+	T // INVALID: may not list a plain type parameter
+}
+```
+
+##### Approximation constraint element
+
+Listing a single type is useless by itself.
+For constraint satisfaction, we want to be able to say not just `int`,
+but "any type whose underlying type is `int`".
+Consider the `Smallest` example above.
+We want it to work not just for slices of the predeclared ordered
+types, but also for types defined by a program.
+If a program uses `type MyString string`, the program can use the `<`
+operator with values of type `MyString`.
+It should be possible to instantiate `Smallest` with the type
+`MyString`.
+
+列出一个单一的类型本身是没有用的。为了满足约束条件，我们希望不仅能说`int`，而且能说 "任何底层类型为`int`的类型"。考虑一下上面的`Smallest`的例子。我们希望它不仅对预先声明的有序类型的片断起作用，而且对程序定义的类型也起作用。如果一个程序使用`MyString`类型的字符串，该程序可以使用`<`操作符与`MyString`类型的值, 并且可以用`MyString`类型来实例化`Smallest`。
+
+To support this, the second new element we permit in a constraint is a
+new syntactic construct: an approximation element, written as `~T`.
+The type set of `~T` is the set of all types whose underlying type is
+`T`.
+
+***为了支持这一点，我们在约束中允许的第二个新元素是一个新的语法结构：一个近似元素，写成~T。~T的类型集是其基本类型为T的所有类型的集合。***
+
+For example: `type AnyString interface{ ~string }`.
+The type set of `~string`, and therefore the type set of `AnyString`,
+is the set of all types whose underlying type is `string`.
+That includes the type `MyString`; `MyString` used as a type argument
+will satisfy the constraint `AnyString`.
+ 
+例如: `ype AnyString interface{ ~string }` 类型集是 `～string`, 因此 AnyString 的类型集 的底层类型是 `string`, 这包括MyString类型；作为类型参数的MyString将满足AnyString的约束。
+
+This new `~T` syntax will be the first use of `~` as a token in Go.
+
+这个新的 `~T`语法将是 `Go` 中首次使用 `~` 作为标记。
+
+Since `~T` means the set of all types whose underlying type is `T`, it
+will be an error to use `~T` with a type `T` whose underlying type is
+not itself.
+Types whose underlying types are themselves are:
+
+
+
+1. Type literals, such as `[]byte` or `struct{ f int }`.
+2. Most predeclared types, such as `int` or `string` (but not
+   `error`).
+
+因为~T是指底层类型为T的所有类型的集合，所以对底层类型不是自己的类型T使用~T将是一个错误。底层类型为其自身的类型是：
+1. 字面类型，例如: `[]byte` 或者  `struct {f int}`。
+2. 大多数预先声明的类型，如int或string（但不包含error）。
+
+Using `~T` is not permitted if `T` is a type parameter or if `T` is an
+interface type.
+
+***如果 `T` 是 `type parameters` 或 `T` 是 `interface type`，则不允许使用 `~T`。***
+
+```go
+type MyString string
+
+// AnyString matches any type whose underlying type is string.
+// This includes, among others, the type string itself, and
+// the type MyString.
+type AnyString interface {
+	~string
+}
+
+// ApproximateMyString is INVALID.
+type ApproximateMyString interface {
+	~MyString // INVALID: underlying type of MyString is not MyString 注意这里
+}
+
+// ApproximateParameter is INVALID.
+type ApproximateParameter[T any] interface {
+	~T // INVALID: T is a type parameter 注意这里
+}
+```
+
+##### Union constraint element
+
+The third new element we permit in a constraint is also a new
+syntactic construct: a union element, written as a series of
+constraint elements separated by vertical bars (`|`).
+For example: `int | float32` or `~int8 | ~int16 | ~int32 | ~int64`.
+The type set of a union element is the union of the type sets of each
+element in the sequence.
+The elements listed in a union must all be different.
+For example:
+
+我们在约束中允许的第三个新元素也是一个新的语法结构：联合元素，写成一系列的约束元素，用竖条`|`隔开。例如：`int | float32 ` 或 `~int8 | ~int16 | ~int32 | ~int64`。一个联合元素的类型集是序列中每个元素的类型集的联合。在一个联合中列出的元素必须都是不同的。比如说
+
+```go
+// PredeclaredSignedInteger is a constraint that matches the
+// five predeclared signed integer types.
+type PredeclaredSignedInteger interface {
+	int | int8 | int16 | int32 | int64
+}
+```
+
+The type set of this union element is the set `{int, int8, int16,
+int32, int64}`.
+Since the union is the only element of `PredeclaredSignedInteger`,
+that is also the type set of `PredeclaredSignedInteger`.
+This constraint can be satisfied by any of those five types.
+
+Here is an example using approximation elements:
+
+这个 `union` 元素的类型集是集合 `{int, int8, int16, int32, int64}`。由于`int | int8 | int16 | int32 | int64` 是 `PredeclaredSignedInteger` 的唯一元素，因此它也是 `PredeclaredSignedInteger` 的类型集。这五种类型中的任何一种都可以满足此约束。
+下面是一个例子：
+
+```go
+// SignedInteger is a constraint that matches any signed integer type.
+type SignedInteger interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64
+}
+```
+
+The type set of this constraint is the set of all types whose
+underlying type is one of `int`, `int8`, `int16`, `int32`, or
+`int64`.
+Any of those types will satisfy this constraint.
+
+The new constraint element syntax is
+
+此约束的类型集是其基础类型为 int、int8、int16、int32 或 int64 之一的所有类型的集合。这些类型中的任何一种都将满足此约束。
+新的约束元素语法是:
+
+```t
+InterfaceType  = "interface" "{" {(MethodSpec | InterfaceTypeName | ConstraintElem) ";" } "}" .
+ConstraintElem = ConstraintTerm { "|" ConstraintTerm } .
+ConstraintTerm = ["~"] Type .
+```
+
+#### Operations based on type sets
+
+The purpose of type sets is to permit generic functions to use
+operators, such as `<`, with values whose type is a type parameter.
+
+类型集的目的是允许泛型函数对`type parameter`的值使用运算符，例如 `<`。
+
+The rule is that a generic function may use a value whose type is a
+type parameter in any way that is permitted by every member of the
+type set of the parameter's constraint.
+This applies to operators like '<' or '+' or other general operators.
+For special purpose operators like `range` loops, we permit their use
+if the type parameter has a structural constraint, as [defined
+later](#Constraint-type-inference); the definition here is basically
+that the constraint has a single underlying type.
+If the function can be compiled successfully using each type in the
+constraint's type set, or when applicable using the structural type,
+then the use is permitted.
+
+规则是泛型函数可以使用参数约束类型集中每个成员允许的任何方式使用其类型为类型参数的值。这适用于“<”或“+”等运算符或其他通用运算符。对于像`range loop`这样的特殊用途运算符，如果类型参数具有结构约束（如后文定义），我们允许使用它们；这里的定义基本上是约束具有单一的基础类型。如果函数可以使用约束类型集中的每种类型成功编译，或者在适用时使用结构类型，则允许使用。
+
+对于前面显示的最小的例子，我们可以使用这样的约束:
+
+```go
+package constraints
+
+// Ordered is a type constraint that matches any ordered type.
+// An ordered type is one that supports the <, <=, >, and >= operators.
+type Ordered interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 |
+		~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+		~float32 | ~float64 |
+		~string
+}
+```
+
+In practice this constraint would likely be defined and exported in a
+new standard library package, `constraints`, so that it could be used
+by function and type definitions.
+
+Given that constraint, we can write this function, now valid:
+
+在实践中，这个约束可能会被定义并导出到一个新的标准库包，即约束，这样它就可以被函数和类型定义所使用。
+
+通过上述理论，我们可以把写这样的一个对比函数:
+
+```go 
+// Smallest returns the smallest element in a slice.
+// It panics if the slice is empty.
+func Smallest[T constraints.Ordered](s []T) T {
+	r := s[0] // panics if slice is empty
+	for _, v := range s[1:] {
+		if v < r {
+			r = v
+		}
+	}
+	return r
+}
+```
+
+#### Comparable types in constraints
+
+Earlier we mentioned that there are two exceptions to the rule that
+operators may only be used with types that are predeclared by the
+language.
+The exceptions are `==` and `!=`, which are permitted for struct,
+array, and interface types.
+These are useful enough that we want to be able to write a constraint
+that accepts any comparable type.
+
+To do this we introduce a new predeclared type constraint:
+`comparable`.
+The type set of the `comparable` constraint is the set of all
+comparable types.
+This permits the use of `==` and `!=` with values of that type
+parameter.
+
+For example, this function may be instantiated with any comparable
+type:
+
+前面我们提到过运算符只能与语言预先声明的类型一起使用的规则有两个例外。
+例外情况是 `==` 和 `!=`，它们允许用于`struct`、`array`和`interace types`。这非常有用，以至于我们希望能够编写一个接受任何可比较类型的约束。
+为此，我们引入了一个新的预声明类型约束：`comparable`。可比较约束的类型集是所有可比较类型的集合。这允许将 `== `和 `!=` 与该类型参数的值一起使用。
+例如，这个函数可以用任何可比较的类型实例化：
+
+```go
+// Index returns the index of x in s, or -1 if not found.
+func Index[T comparable](s []T, x T) int {
+	for i, v := range s {
+		// v and x are type T, which has the comparable
+		// constraint, so we can use == here.
+		if v == x {
+			return i
+		}
+	}
+	return -1
+}
+```
+
+Since `comparable` is a constraint, it can be embedded in another
+interface type used as a constraint.
+
+由于`comparable`是一种约束，它可以被嵌入到另一个用作约束的接口类型中。
+
+```go
+// ComparableHasher is a type constraint that matches all
+// comparable types with a Hash method.
+type ComparableHasher interface {
+	comparable
+	Hash() uintptr
+}
+```
+
+The constraint `ComparableHasher` is implemented by any type that is
+comparable and also has a `Hash() uintptr` method.
+A generic function that uses `ComparableHasher` as a constraint can
+compare values of that type and can call the `Hash` method.
+
+`ComparableHasher`约束是由任何可比较的类型实现的，并且也有一个`Hash() uintptr`方法。
+一个使用`ComparableHasher`作为约束的通用函数可以比较该类型的值，并且可以调用`Hash`方法。
+
+It's possible to use `comparable` to produce a constraint that can not
+be satisfied by any type.
+See also the [discussion of empty type sets below](#Empty-type-sets).
+
+有可能使用`comparable`来产生一个不能被任何类型满足的约束。也请看下面关于空类型集的[讨论](#Empty-type-sets)。
+
+```
+// ImpossibleConstraint is a type constraint that no type can satisfy,
+// because slice types are not comparable.
+type ImpossibleConstraint interface {
+	comparable
+	[]int
+}
+```
+
+### Mutually referencing type parameters 
+
+Within a single type parameter list, constraints may refer to any of
+the other type parameters, even ones that are declared later in the
+same list.
+(The scope of a type parameter starts at the beginning of the type
+parameter list and extends to the end of the enclosing function or
+type declaration.)
+
+在一个单一的类型参数列表中，约束条件可以引用任何其他的类型参数，甚至是在同一列表中稍后声明的参数。
+(一个类型参数的范围从类型参数列表的开头开始，一直延伸到包围函数或类型声明的结尾）。
+
+For example, consider a generic graph package that contains generic
+algorithms that work with graphs.
+The algorithms use two types, `Node` and `Edge`.
+`Node` is expected to have a method `Edges() []Edge`.
+`Edge` is expected to have a method `Nodes() (Node, Node)`.
+A graph can be represented as a `[]Node`.
+
+例如，考虑一个通用图包，它包含了处理图的通用算法。这些算法使用两种类型：`Node`和`Edge`。`Node`应该有一个方法`Edges() []Edge`。`Edge`应该有一个方法`Nodes() (Node, Node)`。一个图可以表示为一个`[]Node`。
+
+This simple representation is enough to implement graph algorithms
+like finding the shortest path.
+
+这种简单的表示足以实现图形算法，例如寻找最短路径。
+
+```go
+package graph
+
+// NodeConstraint is the type constraint for graph nodes:
+// they must have an Edges method that returns the Edge's
+// that connect to this Node.
+type NodeConstraint[Edge any] interface {
+	Edges() []Edge
+}
+
+// EdgeConstraint is the type constraint for graph edges:
+// they must have a Nodes method that returns the two Nodes
+// that this edge connects.
+type EdgeConstraint[Node any] interface {
+	Nodes() (from, to Node)
+}
+
+// Graph is a graph composed of nodes and edges.
+type Graph[Node NodeConstraint[Edge], Edge EdgeConstraint[Node]] struct { ... }
+
+// New returns a new graph given a list of nodes.
+func New[Node NodeConstraint[Edge], Edge EdgeConstraint[Node]] (nodes []Node) *Graph[Node, Edge] {
+	...
+}
+
+// ShortestPath returns the shortest path between two nodes,
+// as a list of edges.
+func (g *Graph[Node, Edge]) ShortestPath(from, to Node) []Edge { ... }
+```
+
+There are a lot of type arguments and instantiations here.
+In the constraint on `Node` in `Graph`, the `Edge` being passed to the
+type constraint `NodeConstraint` is the second type parameter of
+`Graph`.
+This instantiates `NodeConstraint` with the type parameter `Edge`, so
+we see that `Node` must have a method `Edges` that returns a slice of
+`Edge`, which is what we want.
+The same applies to the constraint on `Edge`, and the same type
+parameters and constraints are repeated for the function `New`.
+We aren't claiming that this is simple, but we are claiming that it is
+possible.
+
+这里有很多类型参数被实例化在这。在 `Graph` 对 `Node` 的约束中，传递给类型约束 `NodeConstraint` 的 `Edge` 是 `Graph` 的第二个类型参数。这用类型参数 `Edge` 实例化了 `NodeConstraint`，因此我们看到 `Node` 必须有一个返回 `Edge` 切片的方法 `Edges`，这正是我们想要的。这同样适用于对 `Edge` 的约束，并且对函数 `New` 重复相同类型的参数和约束。我们并不是说这很简单，而是说这是可能的。
+
+It's worth noting that while at first glance this may look like a
+typical use of interface types, `Node` and `Edge` are non-interface
+types with specific methods.
+In order to use `graph.Graph`, the type arguments used for `Node` and
+`Edge` have to define methods that follow a certain pattern, but they
+don't have to actually use interface types to do so.
+In particular, the methods do not return interface types.
+
+For example, consider these type definitions in some other package:
+
+值得注意的是，虽然乍一看这可能看起来像是接口类型的典型用法，但 `Node` 和 `Edge` 是具有特定方法的非接口类型。为了使用 `graph.Graph`，用于 `Node` 和 `Edge` 的类型参数必须定义遵循特定模式的方法，但它们不必实际使用接口类型来这样做。特别是，这些方法不返回接口类型。
+
+例如，考虑其他包中的这些类型定义：
+
+```go
+// Vertex is a node in a graph.
+type Vertex struct { ... }
+
+// Edges returns the edges connected to v.
+func (v *Vertex) Edges() []*FromTo { ... }
+
+// FromTo is an edge in a graph.
+type FromTo struct { ... }
+
+// Nodes returns the nodes that ft connects.
+func (ft *FromTo) Nodes() (*Vertex, *Vertex) { ... }
+```
+
+There are no interface types here, but we can instantiate
+`graph.Graph` using the type arguments `*Vertex` and `*FromTo`.
+
+这里没有接口类型，但我们可以使用类型参数`*Vertex`和`*FromTo`来实例化`Graph.Graph`。
+
+```go
+var g = graph.New[*Vertex, *FromTo]([]*Vertex{ ... })
+```
+
+`*Vertex` and `*FromTo` are not interface types, but when used
+together they define methods that implement the constraints of
+`graph.Graph`.
+Note that we couldn't pass plain `Vertex` or `FromTo` to `graph.New`,
+since `Vertex` and `FromTo` do not implement the constraints.
+The `Edges` and `Nodes` methods are defined on the pointer types
+`*Vertex` and `*FromTo`; the types `Vertex` and `FromTo` do not have
+any methods.
+
+`*Vertex` 和 `*FromTo` 不是接口类型，但一起使用时它们定义了实现 `graph.Graph` 约束的方法。请注意，我们不能将普通的 `Vertex` 或 `FromTo` 传递给 `graph.New`，因为 `Vertex` 和 `FromTo` 没有实现约束。 `Edges` 和 `Nodes` 方法定义在指针类型` *Vertex` 和 `*FromTo` 上； `Vertex` 和 `FromTo` 类型没有任何方法。
+
+When we use a generic interface type as a constraint, we first
+instantiate the type with the type argument(s) supplied in the type
+parameter list, and then compare the corresponding type argument
+against the instantiated constraint.
+
+当我们使用泛型接口类型作为约束时，我们首先使用`type parameter list`列表中提供的`type argument(s)`实例化该类型，然后将相应的类型参数与实例化的约束进行比较
+
+In this example, the `Node` type argument to `graph.New` has a
+constraint `NodeConstraint[Edge]`.
+When we call `graph.New` with a `Node` type argument of `*Vertex` and
+an `Edge` type argument of `*FromTo`, in order to check the constraint
+on `Node` the compiler instantiates `NodeConstraint` with the type
+argument `*FromTo`.
+That produces an instantiated constraint, in this case a requirement
+that `Node` have a method `Edges() []*FromTo`, and the compiler
+verifies that `*Vertex` satisfies that constraint.
+
+在这个例子中，`graph.New`的`Node`类型参数有一个约束`NodeConstraint[Edge]`。当我们用一个`Node`类型参数`*Vertex`和一个`Edge`类型参数`*FromTo`调用`graph.New`时，为了检查`Node`的约束，编译器用类型参数`*FromTo`实例化`NodeConstraint`。这就产生了一个实例化的约束，在这种情况下，要求`Node`有一个`Edges()[]*FromTo`的方法，编译器会验证`*Vertex`是否满足该约束。
+
+Although `Node` and `Edge` do not have to be instantiated with
+interface types, it is also OK to use interface types if you like.
+
+虽然Node和Edge不一定要用接口类型来实例化，但如果你喜欢，使用接口类型也是可以的。
+
+```go
+type NodeInterface interface { Edges() []EdgeInterface }
+type EdgeInterface interface { Nodes() (NodeInterface, NodeInterface) }
+```
+
+We could instantiate `graph.Graph` with the types `NodeInterface` and
+`EdgeInterface`, since they implement the type constraints.
+There isn't much reason to instantiate a type this way, but it is
+permitted.
+
+我们可以用 `NodeInterface` 和 `EdgeInterface` 类型实例化 `graph.Graph`，因为它们实现了类型约束。没有太多理由以这种方式实例化类型，但它是被允许的。
+
+This ability for type parameters to refer to other type parameters
+illustrates an important point: it should be a requirement for any
+attempt to add generics to Go that it be possible to instantiate
+generic code with multiple type arguments that refer to each other in
+ways that the compiler can check.
+
+这种类型参数引用其他类型参数的能力说明了一个重要的观点：任何向 `Go` 中添加泛型的尝试都应该要求能够使用多个类型参数实例化泛型代码，这些类型参数以编译器可以检查。(基调 0.0 )
+
+### Type inference
+
+In many cases we can use type inference to avoid having to explicitly
+write out some or all of the type arguments.
+We can use _function argument type inference_ for a function call to
+deduce type arguments from the types of the non-type arguments.
+We can use _constraint type inference_ to deduce unknown type arguments
+from known type arguments.
+
+In the examples above, when instantiating a generic function or type,
+we always specified type arguments for all the type parameters.
+We also permit specifying just some of the type arguments, or omitting
+the type arguments entirely, when the missing type arguments can be
+inferred.
+When only some type arguments are passed, they are the arguments for
+the first type parameters in the list.
+
+For example, a function like this:
+
+
+在多数情况下，我们可以使用类型推断来避免必须显式写出部分或全部类型参数。
+
+我们可以` _function argument type inference_`，从非类型参数的类型中推断出类型参数。
+
+我们可以使用` _constraint type inference_ `, 从已知类型参数中推导出未知类型参数。
+
+在上面的示例中，在实例化泛型函数或类型时，我们总是为所有类型参数指定类型参数。当可以推断缺少的类型参数时，我们还允许仅指定一些类型参数，或完全省略类型参数。
+
+当只传递一些类型参数时，它们是列表中第一个类型参数的参数。
+
+例如，像这样的函数：
+
+```go
+func Map[F, T any](s []F, f func(F) T) []T { ... }
+```
+
+can be called in these ways.  (We'll explain below how type inference
+works in detail; this example is to show how an incomplete list of
+type arguments is handled.)
+
+可以通过这些方式调用。(我们将在下面详细解释类型推理是如何工作的；这个例子是为了说明如何处理一个不完整的类型参数列表)。
+
+```go
+	var s []int
+	f := func(i int) int64 { return int64(i) }
+	var r []int64
+	// Specify both type arguments explicitly.
+	r = Map[int, int64](s, f)
+	// Specify just the first type argument, for F,
+	// and let T be inferred.
+	r = Map[int](s, f)
+	// Don't specify any type arguments, and let both be inferred.
+	r = Map(s, f)
+```
+
+If a generic function or type is used without specifying all the type
+arguments, it is an error if any of the unspecified type arguments
+cannot be inferred.
+
+如果在没有指定所有类型参数的情况下使用通用函数或类型，如果任何未指定的类型参数不能被推断出来，那就是一个错误。
+
+(Note: type inference is a convenience feature.
+Although we think it is an important feature, it does not add any
+functionality to the design, only convenience in using it.
+It would be possible to omit it from the initial implementation, and
+see whether it seems to be needed.
+That said, this feature doesn't require additional syntax, and
+produces more readable code.)
+
+(注意：类型推断是一个方便的功能。尽管我们认为它是一个重要的特性，但它并没有为设计增加任何功能，只是在使用时提供了便利。可以在最初的实现中省略它，看看是否看起来需要它。也就是说，这个功能不需要额外的语法，而且能产生更多可读的代码）。
+
 
 ## Author
 
