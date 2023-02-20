@@ -957,8 +957,12 @@ The same applies to embedded interface types.
 For any two interface types `E1` and `E2`, the type set of `interface{
 E1; E2 }` is the intersection of the type sets of `E1` and `E2`.
 
+这同样适用于嵌入式接口类型。对于任何两个接口类型`E1`和`E2`，`interface{ E1; E2 }`的类型集是`E1`和`E2`的类型集的交集。
+
 Therefore, the type set of an interface type is the intersection of
 the type sets of the element of the interface.
+
+***因此，接口类型的类型集是接口元素的类型集的交集。***
 
 #### Type sets of constraints
 
@@ -969,15 +973,21 @@ implements the constraint.
 Now we will say that a type argument satisfies a constraint if it is a
 member of the constraint's type set.
 
+现在我们已经描述了接口类型的类型集，我们将重新定义满足约束的含义。之前我们说过，如果类型参数实现了约束，那么它就满足约束。现在我们说如果类型参数是约束类型集的成员，则它满足约束。
+
 For an ordinary interface type, one whose only elements are method
 signatures and embedded ordinary interface types, the meaning is
 exactly the same: the set of types that implement the interface type
 is exactly the set of types that are in its type set.
 
+对于一个普通的接口类型，其唯一的元素是方法签名和嵌入的普通接口类型，其含义完全相同：实现该接口类型的类型集正好是其类型集中的类型集。
+
 We will now proceed to define additional elements that may appear in
 an interface type that is used as a constraint, and define how those
 additional elements can be used to further control the type set of the
 constraint.
+
+现在我们将继续定义可能出现在作为约束条件的接口类型中的额外元素，并定义如何使用这些额外元素来进一步控制约束条件的类型集。
 
 #### Constraint elements
 
@@ -987,6 +997,8 @@ We propose permitting three additional elements that may be used in an
 interface type used as a constraint.
 If any of these additional elements are used, the interface type may
 not be used as an ordinary type, but may only be used as a constraint.
+
+普通接口类型的元素是方法签名和嵌入式接口类型。我们建议允许在作为约束的接口类型中使用三个额外的元素。如果使用了这些额外的元素，该接口类型就不能作为普通类型使用，而只能作为约束使用。
 
 ## Author
 
