@@ -1,5 +1,5 @@
 ---
-title: "Type Parameters Proposal"
+title: "Golang type parameters proposal "
 date: 2023-02-20T03:54:48+08:00
 draft: false
 tags: ["translate", "Golang", "Generics", "RFC"]
@@ -3166,6 +3166,8 @@ We may add generic variants to the `sort` package.
 It is likely that new special purpose compile-time type-safe container
 types will be developed.
 
+很可能会开发新的专用编译时类型安全容器类型。
+
 We do not expect approaches like the C++ STL iterator types to become
 widely used.
 In Go that sort of idea is more naturally expressed using an interface
@@ -3176,11 +3178,18 @@ less than C++ approaches that in effect inline all code; we believe
 that Go programmers will continue to find that sort of penalty to be
 acceptable.
 
+我们不希望像 C++ STL 迭代器类型这样的方法得到广泛使用。在 Go 中，使用接口类型更自然地表达了这种想法。在 C++ 术语中，将接口类型用于迭代器可以被视为带有抽象惩罚，因为运行时效率将低于实际上内联所有代码的 C++ 方法；我们相信 Go 程序员会继续发现这种惩罚是可以接受的。
+
 As we get more container types, we may develop a standard `Iterator`
 interface.
 That may in turn lead to pressure to modify the language to add some
 mechanism for using an `Iterator` with the `range` clause.
 That is very speculative, though.
+
+随着我们获得更多的容器类型，我们可能会开发一个标准的 Iterator 接口。
+这可能反过来会导致修改语言以添加一些机制来使用带范围子句的迭代器的压力。
+不过，现在只是打算这样。
+
 
 #### Efficiency
 
@@ -3201,6 +3210,13 @@ interface types, using special purpose methods to access each element
 that depends on a type parameter.
 
 Only experience will show what people expect in this area.
+
+目前尚不清楚人们期望从泛型代码中获得什么样的效率。
+泛型函数，而不是泛型类型，可能可以使用基于接口的方法进行编译。
+这将优化编译时间，因为该函数只编译一次，但会有一些运行时间成本。
+对于每组类型参数，泛型类型可能最自然地被编译多次。
+这显然会带来编译时间成本，但不应该有任何运行时间成本。编译器也可以选择实现类似于接口类型的泛型类型，使用特殊用途的方法来访问依赖于类型参数的每个元素。
+只有经验才能表明人们在这方面的期望。
 
 #### Omissions
 
