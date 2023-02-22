@@ -188,7 +188,7 @@ parameters_.
 When running the generic code, the type parameters are replaced by
 _type arguments_.
 
-当运行泛型代码时，`type arguments`被类型实体参数所取代。
+当运行泛型代码时，` type parameters`被` type arguments`所取代。
 
 ```go
 // 原文没有 下面好多 type parameters 与 type arguments 别搞混了 
