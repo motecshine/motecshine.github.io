@@ -1,22 +1,14 @@
-# 深入浅出Rust-Future-Part-5
+---
+title: " 深入浅出Rust-Future-Part-5"
+date: 2023-02-20T03:54:48+08:00
+draft: false
+tags: ["translate", "Async"]
+---
 
 >[原文出处](https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-5---streams-5i8)
 >本文时间：2018-12-09，译者:
 [motecshine](https://github.com/motecshine), 简介：motecshine
 
-欢迎向Rust中文社区投稿,[投稿地址](https://github.com/rustlang-cn/articles) ,好文将在以下地方直接展示
-
-1. [Rust中文社区首页](https://rustlang-cn.org)
-
-2. Rust中文社区阅读Rust文章栏目
-
-3. 知乎专栏[Rust中文社区](https://zhuanlan.zhihu.com/rustlang-cn)
-
-4. 思否专栏[Rust中文社区](https://segmentfault.com/blog/rust-lang)
-
-5. 简书专题[Rust中文社区](https://www.jianshu.com/c/2efae7198ea3)
-
-6. 微博[Rustlang-cn](https://weibo.com/kriry)
 
 ## Intro
 
@@ -36,7 +28,6 @@ pub trait Future {
     type Item;
     type Error;
     fn poll(&mut self) -> Poll<Self::Item, Self::Error>;
-
     // <-- CUT -->
 }
 

@@ -1,17 +1,15 @@
-# 深入浅出Rust-Future-Part-3
+---
+title: " 深入浅出Rust-Future-Part-3"
+date: 2023-02-20T03:54:48+08:00
+draft: false
+tags: ["translate", "Async"]
+---
 
 >译自[Rust futures: an uneducated, short and hopefully not boring tutorial - Part 3 - The reactor](https://dev.to/mindflavor/rust-futures-an-uneducated-short-and-hopefully-not-boring-tutorial---part-3---the-reactor-433)
 >本文时间：2018-12-03，译者:
 [motecshine](https://github.com/motecshine), 简介：motecshine
 
-欢迎向Rust中文社区投稿,**[投稿地址](https://github.com/rustlang-cn/articles)**,好文将在以下地方直接展示
 
-- 1 [Rust中文社区首页](https://rustlang-cn.org/)
-- 2 Rust中文社区**Rust阅读文章栏目**
-- 3 知乎专栏[Rust中文社区](https://zhuanlan.zhihu.com/rustlang-cn)
-- 4 思否专栏[Rust中文社区](https://segmentfault.com/blog/rust-lang)
-- 5 微博[Rustlang-cn](https://weibo.com/kriry)
-- 6 简书专题[Rust中文社区](https://www.jianshu.com/c/2efae7198ea3)
 
 ## Intro
 
