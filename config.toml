@@ -1,4 +1,4 @@
-baseURL = 'https://rustc.io/'
+baseURL = 'https://motecshine.github.io/'
 languageCode = 'zh-cn'
 title = '窝'
 theme = "yinyang"
@@ -11,6 +11,6 @@ tags = true
 
 [[params.socials]]
 name = "About Me"
-link = "https://rustc.io"
+link = "https://motecshine.github.io/"
 
 
